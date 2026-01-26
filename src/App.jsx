@@ -1,14 +1,15 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
+
 import Landing from './pages/Landing';
 import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
 import AuctionController from './pages/AuctionController';
 import AuctionScreen from './pages/AuctionScreen';
+import TeamRegistration from './pages/admin/TeamRegistration';
 import Login from './pages/Login';
 
-// Protected Route Component
 const AdminRoute = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,6 +40,7 @@ export default function App() {
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         <Route path="/admin/auction" element={<AdminRoute><AuctionController /></AdminRoute>} />
+        <Route path="/admin/teams" element={<AdminRoute><TeamRegistration /></AdminRoute>} />
       </Routes>
     </BrowserRouter>
   );

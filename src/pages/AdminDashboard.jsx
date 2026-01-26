@@ -1,132 +1,104 @@
 import { useEffect, useState } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
-import { Link } from 'react-router-dom';
+import { collection, getDocs, deleteDoc, updateDoc, doc } from 'firebase/firestore';
 import * as XLSX from 'xlsx';
+import AdminLayout from '../components/AdminLayout';
+import Loading from '../components/Loading';
 
 export default function AdminDashboard() {
     const [users, setUsers] = useState([]);
-    const [teams, setTeams] = useState([]);
-    const [teamName, setTeamName] = useState('');
-    const [filter, setFilter] = useState('Player'); // 'Player' or 'Manager'
+    const [filter, setFilter] = useState('Player');
+    const [loading, setLoading] = useState(true);
 
-    const fetchAll = async () => {
-        const uSnap = await getDocs(collection(db, 'registrations'));
-        setUsers(uSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-
-        const tSnap = await getDocs(collection(db, 'teams'));
-        setTeams(tSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-    };
-
-    const createTeam = async () => {
-        if (!teamName) return;
-        await addDoc(collection(db, 'teams'), { name: teamName, wallet: 15000 });
-        alert(`Team ${teamName} Created with ₹15,000 Wallet!`);
-        setTeamName('');
-        fetchAll();
+    const fetchUsers = async () => {
+        const snap = await getDocs(collection(db, 'registrations'));
+        setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        setLoading(false);
     };
 
     const updateStatus = async (id, status) => {
+        // Optimistic UI update to prevent lag feel
+        setUsers(users.map(u => u.id === id ? { ...u, status } : u));
         await updateDoc(doc(db, 'registrations', id), { status });
-        fetchAll();
     };
 
     const deleteUser = async (id) => {
-        if (window.confirm("Delete permanently?")) {
-            await deleteDoc(doc(db, 'registrations', id));
-            fetchAll();
-        }
+        if (!confirm("Delete permanently?")) return;
+        setUsers(users.filter(u => u.id !== id));
+        await deleteDoc(doc(db, 'registrations', id));
     };
 
-    const exportToExcel = () => {
+    const exportExcel = () => {
         const ws = XLSX.utils.json_to_sheet(users);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Registrations");
-        XLSX.writeFile(wb, "Liga_Zurrah_Data.xlsx");
+        XLSX.utils.book_append_sheet(wb, ws, "Data");
+        XLSX.writeFile(wb, "LigaZurrah_Export.xlsx");
     };
 
-    useEffect(() => { fetchAll(); }, []);
+    useEffect(() => { fetchUsers(); }, []);
 
-    const filteredUsers = users.filter(u => u.role === filter);
+    if (loading) return <Loading />;
+
+    const filtered = users.filter(u => u.role === filter);
 
     return (
-        <div className="container" style={{ paddingBottom: '50px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
-                <h1>Admin Dashboard</h1>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    <button onClick={exportToExcel} className="btn" style={{ fontSize: '1rem', padding: '10px 20px' }}>EXPORT EXCEL</button>
-                    <Link to="/admin/auction" className="btn btn-gold" style={{ fontSize: '1rem', padding: '10px 20px' }}>GO TO AUCTION</Link>
-                </div>
+        <AdminLayout>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h1>REGISTRATIONS</h1>
+                <button onClick={exportExcel} className="btn" style={{ fontSize: '0.9rem', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>+</span> EXPORT DATA
+                </button>
             </div>
 
-            {/* Team Creator */}
-            <div className="glass-panel" style={{ margin: '20px 0', padding: '20px', maxWidth: '100%' }}>
-                <h3>Create Team</h3>
-                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                    <input className="input-field" placeholder="Team Name" value={teamName} onChange={e => setTeamName(e.target.value)} style={{ flex: 1, padding: '10px' }} />
-                    <button onClick={createTeam} className="btn" style={{ margin: 0 }}>ADD TEAM</button>
-                </div>
-                <div style={{ marginTop: '10px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    {teams.map(t => (
-                        <span key={t.id} style={{ background: '#333', padding: '5px 10px', borderRadius: '5px' }}>
-                            {t.name} (₹{t.wallet})
-                        </span>
-                    ))}
-                </div>
-            </div>
-
-            {/* Filters */}
-            <div className="role-toggle" style={{ margin: '20px 0', maxWidth: '400px' }}>
+            <div className="role-toggle" style={{ margin: '30px 0', maxWidth: '300px' }}>
                 <div className={`role-btn ${filter === 'Player' ? 'active' : ''}`} onClick={() => setFilter('Player')}>PLAYERS</div>
                 <div className={`role-btn ${filter === 'Manager' ? 'active' : ''}`} onClick={() => setFilter('Manager')}>MANAGERS</div>
             </div>
 
-            {/* User List */}
-            <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
-                    <thead>
-                        <tr style={{ background: '#222', textAlign: 'left' }}>
-                            <th style={{ padding: '10px' }}>Photo</th>
-                            <th>Name</th>
-                            <th>Phone</th>
-                            {filter === 'Player' ? <th>Pos / Style</th> : <th>Exp / Team</th>}
-                            <th>Status</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredUsers.map(u => (
-                            <tr key={u.id} style={{ borderBottom: '1px solid #333' }}>
-                                <td style={{ padding: '10px' }}>
-                                    <img src={u.photo} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
-                                </td>
-                                <td>{u.name} <br /><small style={{ color: '#888' }}>{u.age ? `${u.age} yrs` : ''}</small></td>
-                                <td>{u.phone}</td>
-                                <td>
-                                    {u.role === 'Player' ? `${u.position} (${u.style || '-'})` : `${u.experience || '-'} (${u.teamPref || '-'})`}
-                                </td>
-                                <td>
-                                    <span style={{
-                                        color: u.status === 'approved' ? 'lime' : u.status === 'rejected' ? 'red' : 'orange',
-                                        textTransform: 'uppercase', fontWeight: 'bold'
-                                    }}>
-                                        {u.status}
-                                    </span>
-                                </td>
-                                <td>
+            <table className="data-table">
+                <thead>
+                    <tr>
+                        <th>AVATAR</th>
+                        <th>NAME</th>
+                        <th>CLASS</th>
+                        <th>DETAILS</th>
+                        <th>STATUS</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {filtered.map(u => (
+                        <tr key={u.id}>
+                            <td><img src={u.photo} style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid #333' }} /></td>
+                            <td>
+                                <div style={{ fontWeight: 'bold' }}>{u.name}</div>
+                                <div style={{ fontSize: '0.8rem', color: '#666' }}>{u.phone}</div>
+                            </td>
+                            <td>{u.classVal}</td>
+                            <td>{u.role === 'Player' ? u.position : u.experience || 'N/A'}</td>
+                            <td>
+                                <span style={{
+                                    color: u.status === 'approved' ? '#4ade80' : u.status === 'rejected' ? '#f87171' : '#facc15',
+                                    fontWeight: 'bold', fontSize: '0.9rem'
+                                }}>
+                                    {u.status.toUpperCase()}
+                                </span>
+                            </td>
+                            <td>
+                                <div style={{ display: 'flex', gap: '10px' }}>
                                     {u.status === 'pending' && (
                                         <>
-                                            <button onClick={() => updateStatus(u.id, 'approved')} style={{ color: 'lime', background: 'none', border: '1px solid lime', marginRight: '5px', padding: '5px', cursor: 'pointer' }}>✓</button>
-                                            <button onClick={() => updateStatus(u.id, 'rejected')} style={{ color: 'red', background: 'none', border: '1px solid red', padding: '5px', cursor: 'pointer' }}>✗</button>
+                                            <button onClick={() => updateStatus(u.id, 'approved')} style={{ background: '#064e3b', color: '#4ade80', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>JX ACCEPT</button>
+                                            <button onClick={() => updateStatus(u.id, 'rejected')} style={{ background: '#450a0a', color: '#f87171', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>REJECT</button>
                                         </>
                                     )}
-                                    <button onClick={() => deleteUser(u.id)} style={{ marginLeft: '10px', color: '#888', background: 'none', border: 'none', cursor: 'pointer' }}>🗑</button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+                                    <button onClick={() => deleteUser(u.id)} style={{ background: 'transparent', border: '1px solid #444', color: '#888', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>DEL</button>
+                                </div>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </AdminLayout>
     );
 }
