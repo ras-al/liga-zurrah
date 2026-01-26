@@ -32,7 +32,7 @@ export default function AdminDashboard() {
         const ws = XLSX.utils.json_to_sheet(users);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Data");
-        XLSX.writeFile(wb, "LigaZurrah_Export.xlsx");
+        XLSX.writeFile(wb, "LigaZurrha_Export.xlsx");
     };
 
     useEffect(() => { fetchUsers(); }, []);

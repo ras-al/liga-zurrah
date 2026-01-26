@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import './Login.css';
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -15,25 +16,30 @@ export default function Login() {
             await signInWithEmailAndPassword(auth, email, password);
             navigate('/admin');
         } catch (err) {
-            setError("Invalid Login Credentials");
+            setError("Invalid Login Credentials. Access Denied.");
         }
     };
 
     return (
-        <div className="container flex-center" style={{ minHeight: '100vh', flexDirection: 'column' }}>
-            <div className="glass-panel" style={{ width: '400px' }}>
-                <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>ADMIN LOGIN</h2>
-                {error && <p style={{ color: 'red', textAlign: 'center' }}>{error}</p>}
+        <div className="login-container">
+            <div className="login-glass-panel">
+                <Link to="/" style={{ color: '#666', textDecoration: 'none', fontSize: '0.8rem', display: 'block', marginBottom: '20px', letterSpacing: '2px' }}>← RETURN HOME</Link>
+
+                <h2 className="login-title">ADMIN LOGIN</h2>
+                <div style={{ width: '40px', height: '3px', background: 'var(--neon-red)', margin: '-20px auto 40px' }}></div>
+
+                {error && <div className="error-msg">{error}</div>}
+
                 <form onSubmit={handleLogin}>
-                    <div className="input-group">
-                        <label>EMAIL</label>
-                        <input type="email" required onChange={e => setEmail(e.target.value)} />
+                    <div className="login-input-group">
+                        <label>SECURE EMAIL</label>
+                        <input type="email" required onChange={e => setEmail(e.target.value)} placeholder="admin@ligazurrha.com" />
                     </div>
-                    <div className="input-group">
-                        <label>PASSWORD</label>
-                        <input type="password" required onChange={e => setPassword(e.target.value)} />
+                    <div className="login-input-group">
+                        <label>ACCESS KEY</label>
+                        <input type="password" required onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
                     </div>
-                    <button className="submit-btn" style={{ marginTop: '20px' }}>LOGIN</button>
+                    <button className="login-btn">AUTHENTICATE</button>
                 </form>
             </div>
         </div>

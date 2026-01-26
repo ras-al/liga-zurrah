@@ -611,19 +611,24 @@
         font-size: 2rem;
     }
 
+    .mega-btn,
+    .cta-btn,
+    .primary-btn,
+    .secondary-btn {
+        width: auto !important;
+        font-size: 1.1rem;
+        padding: 15px 30px;
+        white-space: nowrap;
+        margin-bottom: 10px;
+    }
+
     .hero-btns {
         flex-direction: column;
         gap: 15px;
         width: 100%;
         padding: 0 20px;
-    }
-
-    .mega-btn,
-    .cta-btn,
-    .primary-btn {
-        width: 100%;
-        font-size: 1.2rem;
-        padding: 1rem 2rem;
+        align-items: center;
+        /* Center align buttons */
     }
 
     /* About Mobile */

@@ -53,12 +53,19 @@ export default function Register() {
         }
     };
 
-    const checkLimits = async (selectedRole) => {
-        const q = query(collection(db, 'registrations'), where('role', '==', selectedRole));
-        const snap = await getDocs(q);
-        const limit = selectedRole === 'Player' ? 144 : 16;
-        return snap.size < limit;
+    // State for multi-select positions
+    const [selectedPositions, setSelectedPositions] = useState([]);
+    const positionOptions = ["Forward", "Midfielder", "Defender", "Goalkeeper"];
+
+    const togglePosition = (pos) => {
+        setSelectedPositions(prev =>
+            prev.includes(pos)
+                ? prev.filter(p => p !== pos)
+                : [...prev, pos]
+        );
     };
+
+    // Limit check removed as per request
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -79,6 +86,8 @@ export default function Register() {
         if (role === 'Player') {
             const age = parseInt(ageRef.current.value);
             if (!age || age < 15 || age > 55) return alert("Invalid Age! Must be between 15 and 55.");
+
+            if (selectedPositions.length === 0) return alert("Please select at least one Position.");
         }
 
         if (!photoBase64) return alert("Please upload a Profile Photo.");
@@ -86,14 +95,6 @@ export default function Register() {
         setLoading(true);
 
         try {
-            // 2. Check Limits
-            const canRegister = await checkLimits(role);
-            if (!canRegister) {
-                alert(`Registration Full! Limit reached for ${role}s.`);
-                setLoading(false);
-                return;
-            }
-
             // 3. Prepare Data
             const formData = {
                 name: name,
@@ -109,7 +110,7 @@ export default function Register() {
 
             if (role === 'Player') {
                 formData.age = ageRef.current.value;
-                formData.position = positionRef.current.value || 'Forward';
+                formData.position = selectedPositions.join(', '); // Join array to string
                 formData.basePrice = 500;
             } else {
                 formData.basePrice = 0;
@@ -126,7 +127,7 @@ export default function Register() {
     };
 
     return (
-        <div className="container register-container" style={{ paddingTop: '50px', position: 'relative' }}>
+        <div className="container register-container" style={{ paddingTop: '20px', position: 'relative', display: 'flex', flexDirection: 'column' }}>
             {/* Back Button */}
             <button
                 onClick={() => navigate('/')}
@@ -141,10 +142,10 @@ export default function Register() {
                 <div className="reg-divider"></div>
                 <p className="reg-subtitle">SEASON 2026 • OFFICIAL DRAFT</p>
                 <div className="reg-stats">
-                    <span>SPOTS REMAINING:</span>
-                    <strong style={{ color: '#fff', marginLeft: '5px' }}>{Math.max(0, 144 - stats.players)} PLAYERS</strong>
+                    <span>TOTAL REGISTERED:</span>
+                    <strong style={{ color: '#fff', marginLeft: '5px' }}>{stats.players} PLAYERS</strong>
                     <span style={{ margin: '0 10px' }}>|</span>
-                    <strong style={{ color: '#fff' }}>{Math.max(0, 16 - stats.managers)} MANAGERS</strong>
+                    <strong style={{ color: '#fff' }}>{stats.managers} MANAGERS</strong>
                 </div>
             </div>
 
@@ -178,13 +179,18 @@ export default function Register() {
                                 <input type="number" required ref={ageRef} min="15" max="55" />
                             </div>
                             <div className="input-group">
-                                <label>POSITION</label>
-                                <select ref={positionRef}>
-                                    <option value="Forward">Forward (FW)</option>
-                                    <option value="Midfielder">Midfielder (MID)</option>
-                                    <option value="Defender">Defender (DEF)</option>
-                                    <option value="Goalkeeper">Goalkeeper (GK)</option>
-                                </select>
+                                <label>POSITIONS (SELECT MULTIPLE)</label>
+                                <div className="position-grid">
+                                    {positionOptions.map(pos => (
+                                        <div
+                                            key={pos}
+                                            className={`position-pill ${selectedPositions.includes(pos) ? 'active' : ''}`}
+                                            onClick={() => togglePosition(pos)}
+                                        >
+                                            {pos}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     )}

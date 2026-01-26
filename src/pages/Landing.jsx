@@ -21,7 +21,7 @@ const Hero = () => (
                 transition={{ duration: 1 }}
                 className="hero-subtitle"
             >
-                ZURRAH PRESENTS
+                ZURRHA PRESENTS
             </motion.h3>
 
             <motion.div
@@ -30,7 +30,7 @@ const Hero = () => (
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 1, delay: 0.3 }}
             >
-                <h1 className="hero-title">LIGA ZURRAH</h1>
+                <h1 className="hero-title">LIGA ZURRHA</h1>
                 <motion.div
                     className="floating-ball"
                     animate={{ y: [0, -20, 0] }}
@@ -191,7 +191,7 @@ export default function Landing() {
             </div>
 
             <footer className="landing-footer">
-                <p>&copy; 2026 Zurrah Presents | LIGA ZURRAH</p>
+                <p>&copy; 2026 Zurrha Presents | LIGA ZURRHA</p>
             </footer>
         </div>
     );
