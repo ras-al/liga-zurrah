@@ -1,0 +1,333 @@
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@500;600;700&display=swap');
+
+:root {
+  --neon-red: #ff0040;
+  --neon-gold: #fbbf24;
+  --bg-dark: #050505;
+  --glass: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-dark);
+  /* Subtle mesh background pattern */
+  background-image:
+    radial-gradient(circle at 50% 0%, #2a0a12 0%, transparent 60%),
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 40px 40px, 40px 40px;
+  color: #fff;
+  font-family: 'Rajdhani', sans-serif;
+  min-height: 100vh;
+}
+
+/* Typography */
+h2,
+h3,
+label {
+  font-family: 'Anton', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Form Container - Glass Effect */
+.glass-panel {
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  max-width: 500px;
+  margin: 40px auto;
+  animation: slideUp 0.8s ease-out;
+}
+
+/* Custom Inputs */
+.input-group {
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.input-group label {
+  display: block;
+  color: #888;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  transition: 0.3s;
+}
+
+.input-group input,
+.input-group select {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #333;
+  padding: 15px;
+  color: #fff;
+  font-size: 1.1rem;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: 0.3s all;
+}
+
+.input-group input:focus,
+.input-group select:focus {
+  outline: none;
+  border-color: var(--neon-red);
+  box-shadow: 0 0 15px rgba(255, 0, 64, 0.3);
+  background: black;
+}
+
+/* Toggle Buttons */
+.role-toggle {
+  display: flex;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 5px;
+  border-radius: 10px;
+  margin-bottom: 30px;
+}
+
+.role-btn {
+  flex: 1;
+  padding: 12px;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 8px;
+  font-family: 'Anton', sans-serif;
+  color: #666;
+  transition: 0.3s;
+}
+
+.role-btn.active {
+  background: var(--neon-red);
+  color: white;
+  box-shadow: 0 0 20px rgba(255, 0, 64, 0.4);
+}
+
+/* Submit Button */
+.submit-btn {
+  width: 100%;
+  padding: 18px;
+  background: linear-gradient(45deg, var(--neon-red), #d90429);
+  color: white;
+  border: none;
+  font-family: 'Anton', sans-serif;
+  font-size: 1.5rem;
+  letter-spacing: 2px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  text-transform: uppercase;
+}
+
+.submit-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(255, 0, 64, 0.5);
+}
+
+.submit-btn:disabled {
+  background: #333;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Image Preview */
+.img-preview-box {
+  width: 100%;
+  height: 200px;
+  border: 2px dashed #444;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.img-preview-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.upload-icon {
+  font-size: 3rem;
+  color: #444;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile Tweaks */
+@media (max-width: 600px) {
+  .glass-panel {
+    margin: 20px;
+    padding: 20px;
+  }
+}
+
+/* Landing Page Specifics */
+.landing-hero {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  background: black;
+}
+
+.hero-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.4;
+  z-index: 0;
+  filter: blur(2px) brightness(0.7);
+  transform: scale(1.1);
+  animation: slowZoom 20s infinite alternate;
+}
+
+@keyframes slowZoom {
+  from {
+    transform: scale(1);
+  }
+
+  to {
+    transform: scale(1.15);
+  }
+}
+
+.hero-content {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.liga-logo {
+  width: 220px;
+  max-width: 50vw;
+  margin-bottom: 2rem;
+  border-radius: 50%;
+  /* Force circle */
+  box-shadow: 0 0 30px rgba(251, 191, 36, 0.2);
+  filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.8));
+}
+
+.hero-title {
+  font-family: 'Anton', sans-serif;
+  font-size: clamp(4rem, 12vw, 9rem);
+  line-height: 0.9;
+  text-transform: uppercase;
+  background: linear-gradient(to bottom, #fff, #aaa);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+  text-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.hero-subtitle {
+  color: var(--neon-gold);
+  font-size: clamp(1rem, 3vw, 1.8rem);
+  letter-spacing: 0.5em;
+  margin-bottom: 10px;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+}
+
+.hero-stats {
+  display: flex;
+  gap: 2rem;
+  margin: 2rem 0 3rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-val {
+  font-size: 2.5rem;
+  font-family: 'Anton', sans-serif;
+  color: var(--neon-red);
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  color: #888;
+}
+
+.cta-btn {
+  padding: 1.2rem 3.5rem;
+  font-size: 1.5rem;
+  font-family: 'Anton', sans-serif;
+  background: transparent;
+  color: white;
+  border: 2px solid var(--neon-red);
+  position: relative;
+  overflow: hidden;
+  transition: 0.4s;
+  letter-spacing: 2px;
+  text-decoration: none;
+  border-radius: 4px;
+  /* small radius for detailed look */
+  text-transform: uppercase;
+  z-index: 1;
+}
+
+.cta-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--neon-red);
+  z-index: -1;
+  transform: skewX(20deg) translateX(-150%);
+  transition: 0.4s;
+}
+
+.cta-btn:hover::before {
+  transform: skewX(20deg) translateX(0);
+}
+
+.cta-btn:hover {
+  box-shadow: 0 0 30px rgba(255, 0, 64, 0.6);
+  border-color: var(--neon-red);
+}
