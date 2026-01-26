@@ -173,17 +173,17 @@ export default function Register() {
 
                 <form onSubmit={handleSubmit}>
                     <div className="input-group">
-                        <label>FULL NAME</label>
+                        <label>FULL NAME *</label>
                         <input type="text" required ref={nameRef} placeholder="e.g. Lionel Messi" />
                     </div>
 
                     <div className="register-grid">
                         <div className="input-group">
-                            <label>MOBILE NUMBER</label>
+                            <label>MOBILE NUMBER *</label>
                             <input type="tel" required ref={phoneRef} placeholder="10-digit number" maxLength="10" />
                         </div>
                         <div className="input-group">
-                            <label>CLASS</label>
+                            <label>CLASS *</label>
                             <input type="text" required ref={classRef} placeholder="e.g. R4A" />
                         </div>
                     </div>
@@ -191,11 +191,11 @@ export default function Register() {
                     {role === 'Player' && (
                         <div className="register-grid">
                             <div className="input-group">
-                                <label>AGE (15-55)</label>
+                                <label>AGE (15-55) *</label>
                                 <input type="number" required ref={ageRef} min="15" max="55" />
                             </div>
                             <div className="input-group">
-                                <label>POSITIONS (SELECT MULTIPLE)</label>
+                                <label>POSITIONS (SELECT MULTIPLE) *</label>
                                 <div className="position-grid">
                                     {positionOptions.map(pos => (
                                         <div
@@ -212,7 +212,7 @@ export default function Register() {
                     )}
 
                     <div className="input-group">
-                        <label>PHOTO UPLOAD (MAX 5MB)</label>
+                        <label>PHOTO UPLOAD (MAX 5MB) *</label>
                         <input type="file" accept="image/*" onChange={handleImage} style={{ display: 'none' }} id="file-upload" />
                         <label htmlFor="file-upload" className="img-preview-box" style={{ cursor: 'pointer', border: preview ? '2px solid var(--neon-red)' : '2px dashed #444' }}>
                             {preview ? <img src={preview} alt="Preview" /> : (

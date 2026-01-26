@@ -69,14 +69,14 @@ export default function AdminDashboard() {
                 <tbody>
                     {filtered.map(u => (
                         <tr key={u.id}>
-                            <td><img src={u.photo} style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid #333' }} /></td>
-                            <td>
+                            <td data-label="AVATAR"><img src={u.photo} style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid #333' }} /></td>
+                            <td data-label="NAME">
                                 <div style={{ fontWeight: 'bold' }}>{u.name}</div>
                                 <div style={{ fontSize: '0.8rem', color: '#666' }}>{u.phone}</div>
                             </td>
-                            <td>{u.classVal}</td>
-                            <td>{u.role === 'Player' ? u.position : u.experience || 'N/A'}</td>
-                            <td>
+                            <td data-label="CLASS">{u.classVal}</td>
+                            <td data-label="DETAILS">{u.role === 'Player' ? u.position : u.experience || 'N/A'}</td>
+                            <td data-label="STATUS">
                                 <span style={{
                                     color: u.status === 'approved' ? '#4ade80' : u.status === 'rejected' ? '#f87171' : '#facc15',
                                     fontWeight: 'bold', fontSize: '0.9rem'
@@ -84,8 +84,8 @@ export default function AdminDashboard() {
                                     {u.status.toUpperCase()}
                                 </span>
                             </td>
-                            <td>
-                                <div style={{ display: 'flex', gap: '10px' }}>
+                            <td data-label="ACTIONS">
+                                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
                                     {u.status === 'pending' && (
                                         <>
                                             <button onClick={() => updateStatus(u.id, 'approved')} style={{ background: '#064e3b', color: '#4ade80', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>JX ACCEPT</button>
