@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
@@ -42,7 +43,7 @@ export default function Register() {
         const file = e.target.files[0];
         if (file) {
             // Updated limit: 5MB
-            if (file.size > 5000000) return alert("Photo too big! Max 5MB allowed.");
+            if (file.size > 5000000) return toast.error("Photo too big! Max 5MB allowed.");
 
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -83,6 +84,10 @@ export default function Register() {
 
     // Limit check removed as per request
 
+    // ...
+    // Import at top (added automatically by tool if possible, but specifying here)
+    // import toast from 'react-hot-toast';
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -91,22 +96,22 @@ export default function Register() {
         const userClass = classRef.current.value.trim();
 
         // 1. Strict Validation
-        if (!name) return alert("Please enter your Full Name.");
+        if (!name) return toast.error("Please enter your Full Name.");
 
         // Mobile Validation: 10 digits only
         const phoneRegex = /^[0-9]{10}$/;
-        if (!phoneRegex.test(phone)) return alert("Invalid Phone Number! Must be exactly 10 digits.");
+        if (!phoneRegex.test(phone)) return toast.error("Invalid Phone Number! Must be exactly 10 digits.");
 
-        if (!userClass) return alert("Please enter your Class (e.g. R4A).");
+        if (!userClass) return toast.error("Please enter your Class (e.g. R4A).");
 
         if (role === 'Player') {
             const age = parseInt(ageRef.current.value);
-            if (!age || age < 15 || age > 55) return alert("Invalid Age! Must be between 15 and 55.");
+            if (!age || age < 15 || age > 55) return toast.error("Invalid Age! Must be between 15 and 55.");
 
-            if (selectedPositions.length === 0) return alert("Please select at least one Position.");
+            if (selectedPositions.length === 0) return toast.error("Please select at least one Position.");
         }
 
-        if (!photoBase64) return alert("Please upload a Profile Photo.");
+        if (!photoBase64) return toast.error("Please upload a Profile Photo.");
 
         setLoading(true);
 
@@ -133,11 +138,11 @@ export default function Register() {
             }
 
             await addDoc(collection(db, 'registrations'), formData);
-            alert(`Welcome to the League, ${formData.name}!`);
+            toast.success(`Welcome to the League, ${formData.name}! ⚽`);
             navigate('/');
         } catch (error) {
             console.error("Error:", error);
-            alert("Registration failed. Please try again.");
+            toast.error("Registration failed. Please try again.");
         }
         setLoading(false);
     };

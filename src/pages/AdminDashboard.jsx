@@ -3,13 +3,15 @@ import { db } from '../firebase';
 import { collection, getDocs, deleteDoc, updateDoc, doc } from 'firebase/firestore';
 import * as XLSX from 'xlsx';
 import AdminLayout from '../components/AdminLayout';
-import Loading from '../components/Loading';
+import Loading from '../components/Loading'; // Can be removed if unused, but keeping for safety
+import SkeletonRow from '../components/SkeletonRow';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AdminDashboard() {
     const [users, setUsers] = useState([]);
     const [filter, setFilter] = useState('Player');
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
     const [selectedUser, setSelectedUser] = useState(null);
 
     const fetchUsers = async () => {
@@ -22,17 +24,17 @@ export default function AdminDashboard() {
     };
 
     const updateStatus = async (id, status) => {
-        // Optimistic UI update to prevent lag feel
+        // Optimistic UI update
         setUsers(users.map(u => u.id === id ? { ...u, status } : u));
         await updateDoc(doc(db, 'registrations', id), { status });
-        if (selectedUser?.id === id) setSelectedUser(prev => ({ ...prev, status })); // Update modal if open
+        if (selectedUser?.id === id) setSelectedUser(prev => ({ ...prev, status }));
     };
 
     const deleteUser = async (id) => {
         if (!confirm("Delete permanently?")) return;
         setUsers(users.filter(u => u.id !== id));
         await deleteDoc(doc(db, 'registrations', id));
-        if (selectedUser?.id === id) setSelectedUser(null); // Close modal if deleted
+        if (selectedUser?.id === id) setSelectedUser(null);
     };
 
     const exportExcel = () => {
@@ -50,17 +52,37 @@ export default function AdminDashboard() {
 
     useEffect(() => { fetchUsers(); }, []);
 
-    if (loading) return <Loading />;
-
-    const filtered = users.filter(u => u.role === filter);
+    const filtered = users.filter(u => {
+        const matchesRole = u.role === filter;
+        const matchesSearch = searchTerm === '' ||
+            u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            u.phone?.includes(searchTerm);
+        return matchesRole && matchesSearch;
+    });
 
     return (
         <AdminLayout>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
                 <h1>REGISTRATIONS</h1>
-                <button onClick={exportExcel} className="btn" style={{ fontSize: '0.9rem', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>+</span> EXPORT DATA
-                </button>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                    <input
+                        type="text"
+                        placeholder="Search Name or Phone..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{
+                            padding: '10px 15px',
+                            borderRadius: '4px',
+                            border: '1px solid #444',
+                            background: '#111',
+                            color: 'white',
+                            fontFamily: 'inherit'
+                        }}
+                    />
+                    <button onClick={exportExcel} className="btn" style={{ fontSize: '0.9rem', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>+</span> EXPORT DATA
+                    </button>
+                </div>
             </div>
 
             <div className="role-toggle" style={{ margin: '30px 0', maxWidth: '300px' }}>
@@ -81,30 +103,33 @@ export default function AdminDashboard() {
                     </tr>
                 </thead>
                 <tbody>
-                    {filtered.map(u => (
-                        <tr key={u.id} onClick={() => setSelectedUser(u)} style={{ cursor: 'pointer' }}>
-                            <td data-label="AVATAR"><img src={u.photo} style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid #333' }} /></td>
-                            <td data-label="NAME">
-                                <div style={{ fontWeight: 'bold' }}>{u.name}</div>
-                            </td>
-                            <td data-label="PHONE" style={{ color: '#666', fontFamily: 'monospace', fontSize: '1rem' }}>{u.phone}</td>
-                            <td data-label="CLASS">{u.class}</td>
-                            <td data-label="DETAILS">{u.role === 'Player' ? u.position : u.experience || 'N/A'}</td>
-                            <td data-label="STATUS">
-                                <span style={{
-                                    color: u.status === 'approved' ? '#4ade80' : u.status === 'rejected' ? '#f87171' : '#facc15',
-                                    fontWeight: 'bold', fontSize: '0.9rem'
-                                }}>
-                                    {u.status.toUpperCase()}
-                                </span>
-                            </td>
-                            <td data-label="ACTIONS" onClick={(e) => e.stopPropagation()}>
-                                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                                    <button onClick={() => deleteUser(u.id)} style={{ background: 'transparent', border: '1px solid #444', color: '#888', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>DEL</button>
-                                </div>
-                            </td>
-                        </tr>
-                    ))}
+                    {loading ? (
+                        <>
+                            <SkeletonRow /><SkeletonRow /><SkeletonRow /><SkeletonRow /><SkeletonRow />
+                        </>
+                    ) : (
+                        filtered.map(u => (
+                            <tr key={u.id} onClick={() => setSelectedUser(u)} style={{ cursor: 'pointer' }}>
+                                <td data-label="AVATAR"><img src={u.photo} style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid #333' }} /></td>
+                                <td data-label="NAME">
+                                    <div style={{ fontWeight: 'bold' }}>{u.name}</div>
+                                </td>
+                                <td data-label="PHONE" style={{ color: '#666', fontFamily: 'monospace', fontSize: '1rem' }}>{u.phone}</td>
+                                <td data-label="CLASS">{u.class}</td>
+                                <td data-label="DETAILS">{u.role === 'Player' ? u.position : u.experience || 'N/A'}</td>
+                                <td data-label="STATUS">
+                                    <span className={`status-pill status-${u.status}`}>
+                                        {u.status}
+                                    </span>
+                                </td>
+                                <td data-label="ACTIONS" onClick={(e) => e.stopPropagation()}>
+                                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                                        <button onClick={() => deleteUser(u.id)} style={{ background: 'transparent', border: '1px solid #444', color: '#888', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>DEL</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))
+                    )}
                 </tbody>
             </table>
 
@@ -155,9 +180,9 @@ export default function AdminDashboard() {
                                 </div>
                                 <div className="detail-row">
                                     <span>STATUS</span>
-                                    <strong style={{
-                                        color: selectedUser.status === 'approved' ? '#4ade80' : selectedUser.status === 'rejected' ? '#f87171' : '#facc15'
-                                    }}>{selectedUser.status.toUpperCase()}</strong>
+                                    <span className={`status-pill status-${selectedUser.status}`}>
+                                        {selectedUser.status}
+                                    </span>
                                 </div>
                             </div>
 

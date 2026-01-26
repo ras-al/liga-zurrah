@@ -27,32 +27,7 @@ export default function AuctionScreen() {
     return (
         <div className="auction-layout">
 
-            {/* Left Sidebar: Team Wallets */}
-            <div className="auction-sidebar">
-                <h3 style={{ borderBottom: '1px solid var(--neon-red)', paddingBottom: '10px' }}>AVAILABLE TEAMS</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '20px' }}>
-                    {teams.map(t => (
-                        <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem' }}>
-                            <span style={{ color: '#ccc' }}>{t.name}</span>
-                            <span style={{ color: 'var(--neon-gold)', fontWeight: 'bold' }}>₹{t.wallet}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Middle: Player Image */}
-            <div className="auction-main">
-                <motion.img
-                    key={data.photo}
-                    initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                    src={data.photo}
-                    className="auction-player-img"
-                />
-                <h1 className="auction-player-name">{data.name}</h1>
-                <h2 className="auction-player-details">{data.position} | {data.age} yrs | {data.style}</h2>
-            </div>
-
-            {/* Right: Bidding Stats */}
+            {/* Left Sidebar: Bidding Stats */}
             <div className="auction-stats-panel">
                 <div className="auction-stat-card base-price">
                     <h3>BASE PRICE</h3>
@@ -63,7 +38,8 @@ export default function AuctionScreen() {
                     <h3>CURRENT BID</h3>
                     <motion.div
                         key={data.currentBid}
-                        initial={{ scale: 1.5 }} animate={{ scale: 1 }}
+                        initial={{ scale: 1.3, color: '#fff' }}
+                        animate={{ scale: 1, color: '#fbbf24' }}
                         className="bid-value"
                     >
                         ₹{data.currentBid}
@@ -72,14 +48,28 @@ export default function AuctionScreen() {
 
                 <div className="auction-stat-card highest-bidder">
                     <h3>HIGHEST BIDDER</h3>
-                    <div className="bidder-name">{data.bidderTeam}</div>
+                    <div className="bidder-name">{data.bidderTeam || 'NO BIDS'}</div>
                 </div>
+            </div>
 
-                {/* SOLD STAMP */}
+            {/* Middle: Star Player Stage */}
+            <div className="auction-main">
+                <motion.img
+                    key={data.photo}
+                    initial={{ y: 50, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 50 }}
+                    src={data.photo}
+                    className="auction-player-img"
+                />
+                <h1 className="auction-player-name">{data.name}</h1>
+                <h2 className="auction-player-details">{data.position} • {data.age} YRS • {data.style}</h2>
+
+                {/* SOLD/UNSOLD STAMP */}
                 <AnimatePresence>
                     {(data.status === 'sold' || data.status === 'unsold') && (
                         <motion.div
-                            initial={{ scale: 5, opacity: 0 }}
+                            initial={{ scale: 3, opacity: 0, rotate: -45 }}
                             animate={{ scale: 1, opacity: 1, rotate: -15 }}
                             className={`auction-stamp ${data.status}`}
                         >
@@ -87,6 +77,33 @@ export default function AuctionScreen() {
                         </motion.div>
                     )}
                 </AnimatePresence>
+            </div>
+
+            {/* Right: Team Leaderboard */}
+            <div className="auction-sidebar">
+                <h3 style={{ borderBottom: '2px solid var(--neon-red)', paddingBottom: '15px' }}>TEAM WALLETS</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '20px' }}>
+                    {teams.map(t => (
+                        <div key={t.id} style={{
+                            display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem',
+                            padding: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px',
+                            border: t.name === data.bidderTeam ? '1px solid var(--neon-gold)' : '1px solid transparent'
+                        }}>
+                            <span style={{ color: t.name === data.bidderTeam ? 'var(--neon-gold)' : '#ccc' }}>{t.name}</span>
+                            <span style={{ color: 'var(--neon-gold)', fontFamily: 'Bebas Neue' }}>₹{t.wallet}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Broadcast Footer Ticker */}
+            <div className="next-player-preview">
+                <div className="ticker-wrap">
+                    <div className="ticker-content">
+                        LIGA ZURRHA 2026 LIVE AUCTION • HIGHEST BIDDER: {data.bidderTeam} (₹{data.currentBid}) • WAITING LIST: {teams.length} TEAMS ACTIVE •
+                        LIGA ZURRHA 2026 LIVE AUCTION • HIGHEST BIDDER: {data.bidderTeam} (₹{data.currentBid}) • WAITING LIST: {teams.length} TEAMS ACTIVE •
+                    </div>
+                </div>
             </div>
         </div>
     );

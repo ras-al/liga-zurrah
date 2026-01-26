@@ -139,9 +139,10 @@ export default function AuctionController() {
                         {currentAuction.status === 'live' && (
                             <div className="controls-grid">
                                 <button className="control-btn" onClick={() => increaseBid(100)}>+100</button>
+                                <button className="control-btn" onClick={() => increaseBid(200)}>+200</button>
                                 <button className="control-btn" onClick={() => increaseBid(500)}>+500</button>
-                                <button className="control-btn sold" onClick={markSold}>SOLD PLAYER</button>
-                                <button className="control-btn" style={{ borderColor: '#555' }} onClick={markUnsold}>UNSOLD</button>
+                                <button className="control-btn" style={{ borderColor: '#555', color: '#888' }} onClick={markUnsold}>UNSOLD</button>
+                                <button className="control-btn sold" onClick={markSold}>✓ SOLD TO {currentAuction.bidderTeam}</button>
                             </div>
                         )}
 

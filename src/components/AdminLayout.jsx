@@ -28,6 +28,9 @@ export default function AdminLayout({ children }) {
                 <Link to="/admin/auction" className={`sidebar-link ${isActive('/admin/auction')}`} onClick={() => setIsOpen(false)}>
                     AUCTION CONTROL
                 </Link>
+                <Link to="/admin/squads" className={`sidebar-link ${isActive('/admin/squads')}`} onClick={() => setIsOpen(false)}>
+                    TEAM SQUADS
+                </Link>
                 <Link to="/" className="sidebar-link" style={{ marginTop: 'auto', border: '1px solid #333' }} onClick={() => setIsOpen(false)}>
                     EXIT PANEL
                 </Link>
