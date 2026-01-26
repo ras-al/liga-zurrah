@@ -164,22 +164,7 @@ export default function Landing() {
             <Instructions />
             <Stats />
 
-            {/* Auction Teaser */}
-            <div className="landing-section auction-teaser">
-                <div className="auction-bg-text">SOLD</div>
-                <div className="light-beams">
-                    <div className="beam beam-1"></div>
-                    <div className="beam beam-2"></div>
-                </div>
 
-                <div style={{ position: 'relative', zIndex: 5 }}>
-                    <h2 className="auction-title">LIVE PLAYER AUCTION</h2>
-                    <p className="auction-desc"> EXPERIENCE THE THRILL OF BIDDING WARS.<br />STRATEGY. MONEY. GLORY. </p>
-                    <Link to="/screen" className="auction-btn">
-                        <span className="play-icon">▶</span> WATCH LIVE DEMO
-                    </Link>
-                </div>
-            </div>
 
             {/* Final CTA */}
             <div className="landing-section final-cta">
