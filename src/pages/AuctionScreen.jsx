@@ -16,7 +16,8 @@ export default function AuctionScreen() {
 
         // Listen to Team Wallets
         const unsubTeams = onSnapshot(collection(db, 'teams'), (snap) => {
-            setTeams(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+            // Sort by money left (descending) as requested
+            setTeams(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.wallet - a.wallet));
         });
 
         return () => { unsubAuction(); unsubTeams(); };

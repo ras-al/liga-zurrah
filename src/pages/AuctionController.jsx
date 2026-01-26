@@ -21,11 +21,14 @@ export default function AuctionController() {
     const loadData = async () => {
         const pSnap = await getDocs(collection(db, 'registrations'));
         setPlayers(pSnap.docs.map(d => ({ id: d.id, ...d.data() }))
-            .filter(p => p.role === 'Player' && p.status === 'approved')
+            // Include 'unsold' so they can be re-auctioned
+            .filter(p => p.role === 'Player' && (p.status === 'approved' || p.status === 'unsold'))
             .sort((a, b) => a.name.localeCompare(b.name)));
 
         const tSnap = await getDocs(collection(db, 'teams'));
-        setTeams(tSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+        // Sort Teams by Wallet (Highest First)
+        setTeams(tSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+            .sort((a, b) => b.wallet - a.wallet));
     };
 
     useEffect(() => { loadData(); }, []);
@@ -46,8 +49,9 @@ export default function AuctionController() {
 
     const increaseBid = async (amount) => {
         if (!currentAuction || currentAuction.status !== 'live') return;
+        const newBid = Number(currentAuction.currentBid) + amount;
         await updateDoc(doc(db, 'auction', 'live'), {
-            currentBid: Number(currentAuction.currentBid) + amount
+            currentBid: newBid
         });
     };
 
@@ -65,33 +69,55 @@ export default function AuctionController() {
         const winningTeam = teams.find(t => t.name === currentAuction.bidderTeam);
         if (!winningTeam) return alert("Winning team not found!");
 
-        if (winningTeam.wallet < currentAuction.currentBid) {
-            return alert(`Insufficient Funds! Team only has ₹${winningTeam.wallet}`);
+        const currentBidVal = Number(currentAuction.currentBid);
+        const teamWalletVal = Number(winningTeam.wallet);
+
+        if (teamWalletVal < currentBidVal) {
+            return alert(`Insufficient Funds! Team only has ₹${teamWalletVal}`);
         }
 
         // 2. Update Auction Status to SHOW SOLD
         await updateDoc(doc(db, 'auction', 'live'), { status: 'sold' });
 
         // 3. Deduct Wallet & Save to DB
+        const newWallet = teamWalletVal - currentBidVal;
         await updateDoc(doc(db, 'teams', winningTeam.id), {
-            wallet: winningTeam.wallet - currentAuction.currentBid
+            wallet: newWallet
         });
 
         // 4. Update Player Status
         await updateDoc(doc(db, 'registrations', currentAuction.id), {
             status: 'sold',
             teamId: winningTeam.id,
-            soldPrice: currentAuction.currentBid
+            soldPrice: currentBidVal
         });
 
-        setTimeout(() => {
-            loadData(); // Refresh lists after short delay
-        }, 1000);
+        // 5. Update Local State Immediately
+        setPlayers(prev => prev.filter(p => p.id !== currentAuction.id));
+        setTeams(prev => prev.map(t => t.id === winningTeam.id ? { ...t, wallet: newWallet } : t).sort((a, b) => b.wallet - a.wallet));
+
+        // 6. Reset Screen after delay
+        setTimeout(async () => {
+            await setDoc(doc(db, 'auction', 'live'), { status: 'waiting', currentPlayer: null });
+        }, 3000);
     };
 
     const markUnsold = async () => {
         if (!currentAuction) return;
+
+        // 1. Show Unsold Status
         await updateDoc(doc(db, 'auction', 'live'), { status: 'unsold' });
+
+        // 2. Update Player Status DB
+        await updateDoc(doc(db, 'registrations', currentAuction.id), { status: 'unsold' });
+
+        // 3. Update Local State
+        setPlayers(prev => prev.map(p => p.id === currentAuction.id ? { ...p, status: 'unsold' } : p));
+
+        // 4. Clear Screen after delay
+        setTimeout(async () => {
+            await setDoc(doc(db, 'auction', 'live'), { status: 'waiting', currentPlayer: null });
+        }, 2000); // 2s delay
     };
 
     return (
@@ -104,11 +130,14 @@ export default function AuctionController() {
                         <div key={p.id}
                             className={`pool-item ${currentAuction?.id === p.id ? 'active' : ''}`}
                             onClick={() => selectPlayer(p)}
+                            style={{ opacity: p.status === 'unsold' ? 0.6 : 1, border: p.status === 'unsold' ? '1px dashed #f87171' : '' }}
                         >
                             <img src={p.photo} className="pool-avatar" alt="p" />
                             <div>
                                 <div style={{ fontWeight: 'bold' }}>{p.name}</div>
-                                <div style={{ fontSize: '0.8rem', color: '#888' }}>{p.position}</div>
+                                <div style={{ fontSize: '0.8rem', color: '#888' }}>
+                                    {p.position} {p.status === 'unsold' && <span style={{ color: '#f87171', fontWeight: 'bold' }}>(UNSOLD)</span>}
+                                </div>
                             </div>
                         </div>
                     ))}
