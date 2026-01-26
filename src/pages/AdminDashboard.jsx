@@ -74,7 +74,7 @@ export default function AdminDashboard() {
                                 <div style={{ fontWeight: 'bold' }}>{u.name}</div>
                                 <div style={{ fontSize: '0.8rem', color: '#666' }}>{u.phone}</div>
                             </td>
-                            <td data-label="CLASS">{u.classVal}</td>
+                            <td data-label="CLASS">{u.class}</td>
                             <td data-label="DETAILS">{u.role === 'Player' ? u.position : u.experience || 'N/A'}</td>
                             <td data-label="STATUS">
                                 <span style={{
