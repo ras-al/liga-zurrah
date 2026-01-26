@@ -41,21 +41,37 @@ export default function Register() {
     const handleImage = (e) => {
         const file = e.target.files[0];
         if (file) {
-            // Strict size limit to prevent lag (500KB)
-            if (file.size > 500000) return alert("Photo too big! Max 500KB to prevent lag.");
+            // Updated limit: 5MB
+            if (file.size > 5000000) return alert("Photo too big! Max 5MB allowed.");
 
             const reader = new FileReader();
-            reader.onloadend = () => {
-                setPhotoBase64(reader.result);
-                setPreview(reader.result);
-            };
             reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800;
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    // Compress to JPEG at 0.7 quality
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                    setPhotoBase64(compressedBase64);
+                    setPreview(compressedBase64);
+                };
+            };
         }
     };
 
     // State for multi-select positions
     const [selectedPositions, setSelectedPositions] = useState([]);
-    const positionOptions = ["Forward", "Midfielder", "Defender", "Goalkeeper"];
+    // Removed "Midfielder" as requested
+    const positionOptions = ["Forward", "Defender", "Goalkeeper"];
 
     const togglePosition = (pos) => {
         setSelectedPositions(prev =>
@@ -196,7 +212,7 @@ export default function Register() {
                     )}
 
                     <div className="input-group">
-                        <label>PHOTO UPLOAD (MAX 500KB)</label>
+                        <label>PHOTO UPLOAD (MAX 5MB)</label>
                         <input type="file" accept="image/*" onChange={handleImage} style={{ display: 'none' }} id="file-upload" />
                         <label htmlFor="file-upload" className="img-preview-box" style={{ cursor: 'pointer', border: preview ? '2px solid var(--neon-red)' : '2px dashed #444' }}>
                             {preview ? <img src={preview} alt="Preview" /> : (

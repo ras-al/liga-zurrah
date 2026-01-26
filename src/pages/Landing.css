@@ -195,6 +195,39 @@
 }
 
 /* 2. About */
+.about-section {
+    position: relative;
+    padding-top: 100px;
+    margin-top: -50px;
+    /* Slight overlap */
+    z-index: 5;
+}
+
+.about-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 150px;
+    background: linear-gradient(to bottom, transparent, #0b0b0b);
+    z-index: -1;
+}
+
+/* Optional: Smoke/Fog Overlay */
+.about-section::after {
+    content: '';
+    position: absolute;
+    top: -50px;
+    left: 0;
+    width: 100%;
+    height: 100px;
+    background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.8) 0%, transparent 70%);
+    filter: blur(20px);
+    opacity: 0.8;
+    z-index: -1;
+}
+
 .about-text h2 {
     font-size: 3.5rem;
     margin-bottom: 20px;
@@ -361,43 +394,21 @@
     justify-content: center;
     align-items: center;
     overflow: hidden;
-    border-top: 5px solid white;
+    /* Removed white border */
 }
 
-/* Dynamic pulse animation for CTA background */
-.final-cta::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(circle at center, rgba(255, 0, 0, 0.4) 0%, transparent 70%);
-    animation: pulseRed 4s infinite alternate;
-}
-
-@keyframes pulseRed {
-    from {
-        opacity: 0.5;
-        transform: scale(0.8);
-    }
-
-    to {
-        opacity: 1;
-        transform: scale(1.2);
-    }
-}
+/* ... Pulse animation code remains same ... */
 
 .cta-content {
     position: relative;
     z-index: 2;
     text-align: center;
     padding: 40px;
-    background: rgba(0, 0, 0, 0.6);
-    /* Darker backdrop for text readability */
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    background: transparent;
+    /* Clean look */
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
 }
 
 .cta-content h2 {
