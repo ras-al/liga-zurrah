@@ -27,6 +27,11 @@ export default function AuctionScreen() {
 
     return (
         <div className="auction-layout">
+            <div className="broadcast-overlay"></div>
+            <div className="live-badge">
+                <span className="live-dot"></span> LIVE AUCTION
+            </div>
+
 
             {/* Left Sidebar: Bidding Stats */}
             <div className="auction-stats-panel">
@@ -82,16 +87,15 @@ export default function AuctionScreen() {
 
             {/* Right: Team Leaderboard */}
             <div className="auction-sidebar">
-                <h3 style={{ borderBottom: '2px solid var(--neon-red)', paddingBottom: '15px' }}>TEAM WALLETS</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '20px' }}>
+                <h3>TEAM WALLETS</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                     {teams.map(t => (
-                        <div key={t.id} style={{
-                            display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem',
-                            padding: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px',
-                            border: t.name === data.bidderTeam ? '1px solid var(--neon-gold)' : '1px solid transparent'
-                        }}>
-                            <span style={{ color: t.name === data.bidderTeam ? 'var(--neon-gold)' : '#ccc' }}>{t.name}</span>
-                            <span style={{ color: 'var(--neon-gold)', fontFamily: 'Bebas Neue' }}>₹{t.wallet}</span>
+                        <div
+                            key={t.id}
+                            className={`team-list-item ${t.name === data.bidderTeam ? 'active-bidder' : ''}`}
+                        >
+                            <span className="team-name">{t.name}</span>
+                            <span className="team-wallet">₹{t.wallet}</span>
                         </div>
                     ))}
                 </div>

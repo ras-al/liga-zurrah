@@ -13,6 +13,7 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedUser, setSelectedUser] = useState(null);
+    const [posFilter, setPosFilter] = useState(null);
 
     const fetchUsers = async () => {
         const snap = await getDocs(collection(db, 'registrations'));
@@ -52,43 +53,95 @@ export default function AdminDashboard() {
 
     useEffect(() => { fetchUsers(); }, []);
 
+    // Stats Calculation
+    const totalPlayers = users.filter(u => u.role === 'Player').length;
+    const totalManagers = users.filter(u => u.role === 'Manager').length;
+
+    const positionCounts = {};
+    if (filter === 'Player') {
+        users.filter(u => u.role === 'Player').forEach(u => {
+            if (u.position) {
+                // Split by comma in case of multi-select, trim whitespace
+                u.position.split(',').forEach(p => {
+                    const cleanPos = p.trim();
+                    if (cleanPos) positionCounts[cleanPos] = (positionCounts[cleanPos] || 0) + 1;
+                });
+            }
+        });
+    }
+
     const filtered = users.filter(u => {
         const matchesRole = u.role === filter;
         const matchesSearch = searchTerm === '' ||
             u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             u.phone?.includes(searchTerm);
-        return matchesRole && matchesSearch;
+
+        // Position Filter (loose match to allow multi-select "Striker, Winger" to show up for "Striker")
+        const matchesPos = !posFilter || (u.position && u.position.includes(posFilter));
+
+        return matchesRole && matchesSearch && matchesPos;
     });
 
     return (
         <AdminLayout>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+            {/* 1. HEADER & SEARCH */}
+            <div className="admin-header">
                 <h1>REGISTRATIONS</h1>
-                <div style={{ display: 'flex', gap: '15px' }}>
-                    <input
-                        type="text"
-                        placeholder="Search Name or Phone..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{
-                            padding: '10px 15px',
-                            borderRadius: '4px',
-                            border: '1px solid #444',
-                            background: '#111',
-                            color: 'white',
-                            fontFamily: 'inherit'
-                        }}
-                    />
-                    <button onClick={exportExcel} className="btn" style={{ fontSize: '0.9rem', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>+</span> EXPORT DATA
+                <div className="admin-actions">
+                    <div className="admin-search-box">
+                        <span style={{ fontSize: '1.2rem', color: '#666' }}></span>
+                        <input
+                            type="text"
+                            placeholder="Search Name or Phone..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="admin-search-input"
+                        />
+                    </div>
+                    <button onClick={exportExcel} className="admin-btn export">
+                        <span>+</span> EXPORT DATA
                     </button>
                 </div>
             </div>
 
-            <div className="role-toggle" style={{ margin: '30px 0', maxWidth: '300px' }}>
-                <div className={`role-btn ${filter === 'Player' ? 'active' : ''}`} onClick={() => setFilter('Player')}>PLAYERS</div>
-                <div className={`role-btn ${filter === 'Manager' ? 'active' : ''}`} onClick={() => setFilter('Manager')}>MANAGERS</div>
+            {/* 2. STATS CARDS */}
+            <div className="stats-grid">
+                <div className="stat-card gold-accent">
+                    <div className="stat-label">TOTAL PLAYERS</div>
+                    <div className="stat-number">{totalPlayers}</div>
+                </div>
+                <div className="stat-card red-accent">
+                    <div className="stat-label">TOTAL MANAGERS</div>
+                    <div className="stat-number">{totalManagers}</div>
+                </div>
             </div>
+
+            {/* 3. FILTERS */}
+            <div className="role-tabs">
+                <div className={`role-tab ${filter === 'Player' ? 'active' : ''}`} onClick={() => { setFilter('Player'); setPosFilter(null); }}>PLAYERS</div>
+                <div className={`role-tab ${filter === 'Manager' ? 'active' : ''}`} onClick={() => { setFilter('Manager'); setPosFilter(null); }}>MANAGERS</div>
+            </div>
+
+            {/* POSITION FILTER (Only for Players) */}
+            {filter === 'Player' && (
+                <div className="filter-scroll-container">
+                    <button
+                        onClick={() => setPosFilter(null)}
+                        className={`filter-pill ${!posFilter ? 'active' : ''}`}
+                    >
+                        ALL ({totalPlayers})
+                    </button>
+                    {Object.entries(positionCounts).map(([pos, count]) => (
+                        <button
+                            key={pos}
+                            onClick={() => setPosFilter(pos === posFilter ? null : pos)}
+                            className={`filter-pill ${posFilter === pos ? 'active' : ''}`}
+                        >
+                            {pos.toUpperCase()} ({count})
+                        </button>
+                    ))}
+                </div>
+            )}
 
             <table className="data-table">
                 <thead>

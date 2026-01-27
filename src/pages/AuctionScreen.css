@@ -1,91 +1,176 @@
-/* AuctionScreen.css - Premium Broadcast Redesign */
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Rajdhani:wght@400;600;700&display=swap');
+/* AuctionScreen.css - Premium Broadcast Design V2 */
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Rajdhani:wght@500;600;700&family=Outfit:wght@300;400;700&display=swap');
+
+:root {
+    --neon-gold: #fbbf24;
+    --neon-red: #ef4444;
+    --neon-blue: #3b82f6;
+    --glass-bg: rgba(10, 10, 10, 0.65);
+    --glass-border: rgba(255, 255, 255, 0.08);
+}
 
 .auction-layout {
     height: 100vh;
     display: grid;
-    grid-template-columns: 350px 1fr 350px;
-    /* Precise columns */
-    background: linear-gradient(135deg, #050505 0%, #1a0505 100%);
+    grid-template-columns: 380px 1fr 380px;
+    background: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #000000 100%);
     color: white;
     font-family: 'Rajdhani', sans-serif;
     overflow: hidden;
     position: relative;
 }
 
-/* Background Texture/Grid Element */
+/* Background Effects */
 .auction-layout::before {
     content: "";
     position: absolute;
     inset: 0;
-    background-image:
-        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 50px 50px;
-    pointer-events: none;
+    background:
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.5;
     z-index: 0;
+}
+
+.broadcast-overlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, transparent 60%, rgba(0, 0, 0, 0.8) 100%);
+    pointer-events: none;
+    z-index: 5;
+    box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.9);
+}
+
+/* LIVE BADGE */
+.live-badge {
+    position: absolute;
+    top: 30px;
+    left: 40px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Anton', sans-serif;
+    font-size: 1.5rem;
+    color: white;
+    letter-spacing: 2px;
+    background: rgba(239, 68, 68, 0.85);
+    padding: 8px 24px;
+    border-radius: 4px;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+    transform: skewX(-15deg);
+}
+
+.live-badge span.live-dot {
+    display: block;
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    animation: pulse-red 1.5s infinite;
+}
+
+@keyframes pulse-red {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
 }
 
 /* LEFT PANEL: Bidding Engine */
 .auction-stats-panel {
     z-index: 10;
-    backdrop-filter: blur(20px);
-    background: rgba(0, 0, 0, 0.6);
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(30px);
+    background: var(--glass-bg);
+    border-right: 1px solid var(--glass-border);
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 30px;
-    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+    padding: 40px;
+    position: relative;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
 }
 
 .auction-stat-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    padding: 25px;
-    border-radius: 12px;
-    margin-bottom: 30px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+    border: 1px solid var(--glass-border);
+    padding: 30px 20px;
+    border-radius: 4px;
+    margin-bottom: 35px;
     text-align: center;
     position: relative;
-    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.auction-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .auction-stat-card h3 {
-    color: #888;
-    font-size: 0.9rem;
+    color: #9ca3af;
+    font-size: 0.85rem;
+    font-weight: 700;
     letter-spacing: 4px;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
     text-transform: uppercase;
+    font-family: 'Outfit', sans-serif;
 }
 
-/* Current Bid is Special */
+/* Current Bid is Hero */
 .auction-stat-card.current-bid {
-    background: rgba(251, 191, 36, 0.05);
-    border: 1px solid var(--neon-gold);
-    box-shadow: 0 0 30px rgba(251, 191, 36, 0.1);
+    background: linear-gradient(145deg, rgba(251, 191, 36, 0.1) 0%, rgba(251, 191, 36, 0.02) 100%);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    box-shadow: 0 0 40px rgba(251, 191, 36, 0.05);
+}
+
+.auction-stat-card.current-bid::before {
+    background: var(--neon-gold);
+    box-shadow: 0 0 15px var(--neon-gold);
 }
 
 .bid-value {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 6rem;
+    font-family: 'Anton', sans-serif;
+    font-size: 5.5rem;
     line-height: 1;
-    color: var(--neon-gold);
-    text-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+    color: white;
+    text-shadow:
+        0 0 10px rgba(251, 191, 36, 0.6),
+        4px 4px 0px rgba(0, 0, 0, 0.5);
+    margin-top: 10px;
 }
 
 .stat-value {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 3rem;
-    color: #fff;
+    font-size: 3.5rem;
+    color: #e5e7eb;
 }
 
 .bidder-name {
     font-family: 'Anton', sans-serif;
-    font-size: 2rem;
+    font-size: 2.2rem;
     color: white;
     text-transform: uppercase;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    line-height: 1.1;
+    background: linear-gradient(to bottom, #ffffff, #999999);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
+
 
 /* CENTER PANEL: The Stage */
 .auction-main {
@@ -95,47 +180,70 @@
     align-items: center;
     justify-content: center;
     position: relative;
+    padding-bottom: 60px;
+    /* Space for ticker */
 }
 
-/* Player Card Effect */
+/* Spotlight Effect behind player */
+.auction-main::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60vh;
+    height: 60vh;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+    z-index: -1;
+    pointer-events: none;
+}
+
 .auction-player-img {
-    height: 55vh;
+    height: 52vh;
     width: auto;
+    max-width: 90%;
     object-fit: cover;
-    border-radius: 20px;
-    border: 4px solid var(--neon-gold);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow:
-        0 0 60px rgba(251, 191, 36, 0.2),
-        inset 0 0 20px rgba(0, 0, 0, 0.5);
-    background: #000;
-    margin-bottom: 30px;
+        0 20px 60px rgba(0, 0, 0, 0.8),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+    margin-bottom: 25px;
+    mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+    /* Fade out reflected feet */
 }
 
 .auction-player-name {
     font-family: 'Anton', sans-serif;
-    font-size: 5rem;
+    font-size: 6rem;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: -2px;
     margin: 0;
-    text-shadow: 0 5px 15px rgba(0, 0, 0, 0.8);
-    background: linear-gradient(180deg, #fff 0%, #aaa 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    line-height: 0.9;
+    color: white;
+    text-shadow: 0 10px 30px rgba(0, 0, 0, 1);
+    position: relative;
+    z-index: 2;
 }
 
 .auction-player-details {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 2rem;
-    color: var(--neon-red);
-    letter-spacing: 5px;
-    margin-top: 10px;
+    font-size: 2.5rem;
+    color: var(--neon-gold);
+    letter-spacing: 6px;
+    margin-top: 5px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.6);
+    padding: 0 20px;
+    border-radius: 4px;
 }
 
 /* RIGHT PANEL: Team Sidebar */
 .auction-sidebar {
     z-index: 10;
-    background: rgba(0, 0, 0, 0.8);
-    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(30px);
+    background: var(--glass-bg);
+    border-left: 1px solid var(--glass-border);
     padding: 30px;
     display: flex;
     flex-direction: column;
@@ -143,30 +251,71 @@
 }
 
 .auction-sidebar h3 {
-    font-family: 'Bebas Neue';
-    font-size: 1.5rem;
-    letter-spacing: 2px;
+    font-family: 'Anton';
+    font-size: 1.8rem;
+    letter-spacing: 1px;
     color: #fff;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
+    border-bottom: 2px solid var(--neon-red);
+    padding-bottom: 10px;
+    display: inline-block;
 }
 
-/* BROADCAST OVERLAY FOOTER */
+/* Team List Styling */
+.team-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.2rem;
+    padding: 12px 15px;
+    background: rgba(255, 255, 255, 0.03);
+    margin-bottom: 10px;
+    border-radius: 4px;
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.team-list-item.active-bidder {
+    background: linear-gradient(90deg, rgba(251, 191, 36, 0.15) 0%, transparent 100%);
+    border-left: 3px solid var(--neon-gold);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.team-name {
+    font-weight: 600;
+    color: #e5e7eb;
+}
+
+.team-list-item.active-bidder .team-name {
+    color: white;
+    text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+}
+
+.team-wallet {
+    font-family: 'Bebas Neue';
+    font-size: 1.4rem;
+    color: var(--neon-gold);
+}
+
+
+/* BROADCAST TICKER */
 .next-player-preview {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 60px;
+    height: 50px;
     background: var(--neon-red);
     color: white;
     display: flex;
     align-items: center;
-    padding: 0 40px;
     z-index: 100;
     font-family: 'Rajdhani', sans-serif;
     font-weight: 700;
-    font-size: 1.2rem;
-    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
+    font-size: 1.3rem;
+    text-transform: uppercase;
+    box-shadow: 0 -5px 30px rgba(0, 0, 0, 0.8);
+    border-top: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .ticker-wrap {
@@ -177,12 +326,13 @@
 .ticker-content {
     display: inline-block;
     white-space: nowrap;
-    animation: ticker 20s linear infinite;
+    animation: ticker 30s linear infinite;
+    padding-left: 100%;
 }
 
 @keyframes ticker {
     0% {
-        transform: translateX(100%);
+        transform: translateX(0);
     }
 
     100% {
@@ -190,64 +340,81 @@
     }
 }
 
-/* SOLD STAMP */
+/* STAMPS */
 .auction-stamp {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) rotate(-15deg);
     font-family: 'Black Ops One', cursive;
-    font-size: 10rem;
+    font-size: 12rem;
+    /* Even bigger */
     text-transform: uppercase;
-    padding: 20px 60px;
-    border: 12px solid #fff;
-    border-radius: 30px;
+    padding: 10px 80px;
+    border: 15px solid #fff;
+    border-radius: 20px;
     z-index: 50;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+    box-shadow: 0 30px 100px rgba(0, 0, 0, 0.9);
+    letter-spacing: 10px;
+    mix-blend-mode: hard-light;
 }
 
 .auction-stamp.sold {
     color: #10b981;
     border-color: #10b981;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(16, 185, 129, 0.2);
+    text-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
+    box-shadow: 0 0 100px rgba(16, 185, 129, 0.4);
 }
 
 .auction-stamp.unsold {
     color: #ef4444;
     border-color: #ef4444;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(239, 68, 68, 0.2);
+    text-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+    box-shadow: 0 0 100px rgba(239, 68, 68, 0.4);
 }
 
 /* RESPONSIVE */
 @media (max-width: 1200px) {
     .auction-layout {
-        grid-template-columns: 250px 1fr 250px;
+        grid-template-columns: 280px 1fr 280px;
     }
 
     .bid-value {
         font-size: 4rem;
     }
+
+    .auction-player-name {
+        font-size: 4rem;
+    }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
     .auction-layout {
         display: flex;
         flex-direction: column;
         overflow-y: auto;
+        height: auto;
+    }
+
+    .broadcast-overlay {
+        position: fixed;
+    }
+
+    .auction-main {
+        padding-top: 100px;
+        min-height: 80vh;
     }
 
     .auction-player-img {
-        height: 30vh;
+        height: 40vh;
     }
 
     .auction-stats-panel,
     .auction-sidebar {
         width: 100%;
-        order: 2;
-    }
-
-    .auction-main {
-        order: 1;
+        border: none;
     }
 }
