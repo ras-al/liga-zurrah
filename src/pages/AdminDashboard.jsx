@@ -15,6 +15,8 @@ export default function AdminDashboard() {
     const [selectedUser, setSelectedUser] = useState(null);
     const [posFilter, setPosFilter] = useState(null);
 
+    const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
+
     const fetchUsers = async () => {
         const snap = await getDocs(collection(db, 'registrations'));
         const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -70,7 +72,23 @@ export default function AdminDashboard() {
         });
     }
 
+    // Helper to find duplicate phones
+    const getDuplicatePhones = () => {
+        const phoneCounts = {};
+        users.forEach(u => {
+            if (u.phone) {
+                phoneCounts[u.phone] = (phoneCounts[u.phone] || 0) + 1;
+            }
+        });
+        return Object.keys(phoneCounts).filter(phone => phoneCounts[phone] > 1);
+    };
+
     const filtered = users.filter(u => {
+        if (showDuplicatesOnly) {
+            const duplicates = getDuplicatePhones();
+            return u.phone && duplicates.includes(u.phone);
+        }
+
         const matchesRole = u.role === filter;
         const matchesSearch = searchTerm === '' ||
             u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -96,8 +114,23 @@ export default function AdminDashboard() {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="admin-search-input"
+                            disabled={showDuplicatesOnly}
                         />
                     </div>
+                    <button
+                        onClick={() => {
+                            if (showDuplicatesOnly) {
+                                setShowDuplicatesOnly(false);
+                            } else {
+                                setShowDuplicatesOnly(true);
+                                setFilter(null); // Clear role filter to search across all roles
+                                setPosFilter(null);
+                            }
+                        }}
+                        className={`admin-btn ${showDuplicatesOnly ? 'active-red' : ''}`}
+                    >
+                        {showDuplicatesOnly ? "⚠ SHOWING DUPLICATES" : "FIND DUPLICATES"}
+                    </button>
                     <button onClick={exportExcel} className="admin-btn export">
                         <span>+</span> EXPORT DATA
                     </button>

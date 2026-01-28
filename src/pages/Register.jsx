@@ -95,6 +95,15 @@ export default function Register() {
         const phone = phoneRef.current.value.trim();
         const userClass = classRef.current.value.trim();
 
+        // Check Limit
+        if (role === 'Player' && stats.players >= 144) {
+            return toast.error("Player Registration is Full (Max 144)!");
+        }
+
+        if (role === 'Manager') {
+            return toast.error("Manager Registration is Closed!");
+        }
+
         // 1. Strict Validation
         if (!name) return toast.error("Please enter your Full Name.");
 
@@ -116,6 +125,15 @@ export default function Register() {
         setLoading(true);
 
         try {
+            // Check for duplicate phone number
+            const q = query(collection(db, 'registrations'), where('phone', '==', phone));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                setLoading(false);
+                return toast.error("Phone number already registered!");
+            }
+
             // 3. Prepare Data
             const formData = {
                 name: name,
@@ -164,16 +182,16 @@ export default function Register() {
                 <p className="reg-subtitle">SEASON 2026 • OFFICIAL DRAFT</p>
                 <div className="reg-stats">
                     <span>TOTAL REGISTERED:</span>
-                    <strong style={{ color: '#fff', marginLeft: '5px' }}>{stats.players} PLAYERS</strong>
+                    <strong style={{ color: '#fff', marginLeft: '5px' }}>{stats.players} / 144 PLAYERS</strong>
                     <span style={{ margin: '0 10px' }}>|</span>
-                    <strong style={{ color: '#fff' }}>{stats.managers} MANAGERS</strong>
+                    <strong style={{ color: '#fff' }}>MANAGERS CLOSED</strong>
                 </div>
             </div>
 
             <div className="glass-panel">
                 <div className="role-toggle">
                     <div className={`role-btn ${role === 'Player' ? 'active' : ''}`} onClick={() => setRole('Player')}>PLAYER</div>
-                    <div className={`role-btn ${role === 'Manager' ? 'active' : ''}`} onClick={() => setRole('Manager')}>MANAGER</div>
+                    <div className={`role-btn disabled`} style={{ opacity: 0.5, cursor: 'not-allowed' }}>MANAGER (FULL)</div>
                 </div>
 
                 <form onSubmit={handleSubmit}>

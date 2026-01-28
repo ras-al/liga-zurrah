@@ -58,6 +58,12 @@
     outline: none;
 }
 
+.admin-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
 .admin-btn {
     font-family: 'Bebas Neue';
     letter-spacing: 1px;
@@ -70,6 +76,27 @@
     align-items: center;
     gap: 8px;
     transition: 0.2s;
+    background: #222;
+    color: #888;
+    border: 1px solid #333;
+}
+
+.admin-btn:hover {
+    background: #333;
+    color: white;
+    border-color: #555;
+}
+
+.admin-btn.active-red {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--neon-red);
+    border-color: var(--neon-red);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+}
+
+.admin-btn.active-red:hover {
+    background: var(--neon-red);
+    color: white;
 }
 
 .admin-btn.export {
