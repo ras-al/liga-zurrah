@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, deleteDoc, updateDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, updateDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore';
 import * as XLSX from 'xlsx';
 import AdminLayout from '../components/AdminLayout';
 import Loading from '../components/Loading'; // Can be removed if unused, but keeping for safety
@@ -100,6 +100,88 @@ export default function AdminDashboard() {
         return matchesRole && matchesSearch && matchesPos;
     });
 
+    // Add User State
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [newUser, setNewUser] = useState({
+        name: '', phone: '', class: '', role: 'Player', age: '', position: '', photo: ''
+    });
+    const [photoPreview, setPhotoPreview] = useState(null);
+    const [creating, setCreating] = useState(false);
+
+    const handleAddUserChange = (e) => {
+        setNewUser({ ...newUser, [e.target.name]: e.target.value });
+    };
+
+    const handlePhotoUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Limit: 5MB check first
+            if (file.size > 5000000) return alert("Photo too big! Max 5MB allowed.");
+
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800;
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    // Compress to JPEG at 0.7 quality
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                    setPhotoPreview(compressedBase64);
+                    setNewUser({ ...newUser, photo: compressedBase64 });
+                };
+            };
+        }
+    };
+
+    const createUser = async (e) => {
+        e.preventDefault();
+        setCreating(true);
+        try {
+            const formData = {
+                name: newUser.name,
+                phone: newUser.phone,
+                class: newUser.class,
+                role: newUser.role,
+                photo: newUser.photo || 'https://via.placeholder.com/150', // Default if none
+                timestamp: serverTimestamp(),
+                status: 'approved', // Auto-approve admin added users
+                soldPrice: 0,
+                teamId: null,
+                basePrice: newUser.role === 'Player' ? 500 : 0
+            };
+
+            if (newUser.role === 'Player') {
+                formData.age = newUser.age;
+                formData.position = newUser.position;
+            }
+
+            await addDoc(collection(db, 'registrations'), formData);
+
+            // Refresh and Close
+            await fetchUsers();
+            setShowAddModal(false);
+
+            // Reset Form (Naive reset)
+            setNewUser({ name: '', phone: '', class: '', role: 'Player', age: '', position: '', photo: '' });
+            setPhotoPreview(null);
+
+            alert("User Added Successfully!"); // Simple alert or use toast if available
+        } catch (error) {
+            console.error(error);
+            alert("Error adding user");
+        }
+        setCreating(false);
+    };
+
     return (
         <AdminLayout>
             {/* 1. HEADER & SEARCH */}
@@ -130,6 +212,9 @@ export default function AdminDashboard() {
                         className={`admin-btn ${showDuplicatesOnly ? 'active-red' : ''}`}
                     >
                         {showDuplicatesOnly ? "⚠ SHOWING DUPLICATES" : "FIND DUPLICATES"}
+                    </button>
+                    <button onClick={() => setShowAddModal(true)} className="admin-btn" style={{ background: '#333', color: 'white', border: '1px solid #555' }}>
+                        + ADD USER
                     </button>
                     <button onClick={exportExcel} className="admin-btn export">
                         <span>+</span> EXPORT DATA
@@ -218,6 +303,62 @@ export default function AdminDashboard() {
                     )}
                 </tbody>
             </table>
+
+            {/* ADD USER MODAL */}
+            <AnimatePresence>
+                {showAddModal && (
+                    <motion.div
+                        className="modal-overlay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <motion.div
+                            className="profile-modal"
+                            initial={{ scale: 0.8, opacity: 0, y: 50 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.8, opacity: 0, y: 50 }}
+                        >
+                            <button className="close-modal-btn" onClick={() => setShowAddModal(false)}>✕</button>
+                            <h2 style={{ color: 'white', marginBottom: '20px', fontFamily: 'Anton' }}>ADD NEW USER</h2>
+
+                            <form onSubmit={createUser} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <select
+                                        name="role"
+                                        value={newUser.role}
+                                        onChange={handleAddUserChange}
+                                        style={{ flex: 1, padding: '10px', background: '#222', color: 'white', border: '1px solid #333' }}
+                                    >
+                                        <option value="Player">Player</option>
+                                        <option value="Manager">Manager</option>
+                                    </select>
+                                </div>
+
+                                <input name="name" placeholder="Full Name" value={newUser.name} onChange={handleAddUserChange} required style={{ padding: '10px', background: '#222', color: 'white', border: '1px solid #333' }} />
+                                <input name="phone" placeholder="Phone Number" value={newUser.phone} onChange={handleAddUserChange} required style={{ padding: '10px', background: '#222', color: 'white', border: '1px solid #333' }} />
+                                <input name="class" placeholder="Class (e.g. R4A)" value={newUser.class} onChange={handleAddUserChange} required style={{ padding: '10px', background: '#222', color: 'white', border: '1px solid #333' }} />
+
+                                {newUser.role === 'Player' && (
+                                    <>
+                                        <input name="age" type="number" placeholder="Age" value={newUser.age} onChange={handleAddUserChange} style={{ padding: '10px', background: '#222', color: 'white', border: '1px solid #333' }} />
+                                        <input name="position" placeholder="Position (e.g. Striker)" value={newUser.position} onChange={handleAddUserChange} style={{ padding: '10px', background: '#222', color: 'white', border: '1px solid #333' }} />
+                                    </>
+                                )}
+
+                                <div style={{ border: '1px dashed #444', padding: '20px', textAlign: 'center' }}>
+                                    <input type="file" onChange={handlePhotoUpload} accept="image/*" />
+                                    {photoPreview && <img src={photoPreview} style={{ width: '100px', height: '100px', objectFit: 'cover', marginTop: '10px', borderRadius: '50%' }} />}
+                                </div>
+
+                                <button type="submit" disabled={creating} className="modal-btn approve">
+                                    {creating ? "CREATING..." : "CREATE USER"}
+                                </button>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* PROFILE MODAL */}
             <AnimatePresence>
