@@ -77,7 +77,7 @@ export default function TeamSquads() {
                                 ) : (
                                     teamPlayers.map(p => (
                                         <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#222', padding: '8px', borderRadius: '4px' }}>
-                                            <img src={p.photo || 'https://via.placeholder.com/50'} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
+                                            <img src={p.photo || 'https://placehold.co/50'} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
                                             <div>
                                                 <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>{p.name}</div>
                                                 <div style={{ fontSize: '0.85rem', color: '#aaa', marginTop: '2px' }}>

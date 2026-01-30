@@ -25,20 +25,21 @@ export default function AuctionScreen() {
                 try {
                     console.log("Fetching squad for Team ID:", auctionData.viewTeamId);
 
-                    // Fetch ALL sold players to ensure we don't miss any due to index/query issues
-                    const q = query(collection(db, 'registrations'), where('status', '==', 'sold'));
+                    // ⚡ OPTIMIZED QUERY (Requires Composite Index: teamId ASC + status ASC)
+                    // If this fails with "needs an index", click the link in the console to create it.
+                    const q = query(
+                        collection(db, 'registrations'),
+                        where('teamId', '==', auctionData.viewTeamId),
+                        where('status', '==', 'sold')
+                    );
                     const pSnap = await getDocs(q);
 
-                    const allSoldPlayers = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-                    console.log("Total Sold Players Fetched:", allSoldPlayers.length);
-
-                    // Client-side filter
-                    const teamSquad = allSoldPlayers.filter(p => p.teamId === auctionData.viewTeamId);
+                    const teamSquad = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                     console.log("Players matching Team ID:", teamSquad.length);
 
                     setSquad(teamSquad);
                 } catch (error) {
-                    console.error("Error fetching squad:", error);
+                    console.error("Error fetching squad (Check if Index exists!):", error);
                 }
                 setSquadLoading(false);
             }
@@ -67,7 +68,7 @@ export default function AuctionScreen() {
                     className="reveal-title"
                     style={{ display: 'flex', alignItems: 'center', gap: '20px', justifyContent: 'center' }}
                 >
-                    {data.viewTeamLogo && <img src={data.viewTeamLogo} style={{ width: 80, height: 80, borderRadius: '10px', objectFit: 'cover' }} />}
+                    {data.viewTeamLogo && <img src={(data.viewTeamLogo || '').replace('via.placeholder.com', 'placehold.co')} style={{ width: 80, height: 80, borderRadius: '10px', objectFit: 'cover' }} />}
                     {data.viewTeamName}
                 </motion.h1>
 
@@ -90,7 +91,7 @@ export default function AuctionScreen() {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.3 }}
                             >
-                                <img src={player.photo || 'https://via.placeholder.com/200'} alt={player.name} onError={(e) => e.target.style.display = 'none'} />
+                                <img src={player.photo || 'https://placehold.co/200'} alt={player.name} onError={(e) => e.target.style.display = 'none'} />
                                 <div className="mini-info">
                                     <h4>{player.name}</h4>
                                     <div style={{ fontSize: '0.9rem', color: '#bbb', marginBottom: '4px', fontFamily: 'Rajdhani' }}>{player.position}</div>
@@ -136,7 +137,7 @@ export default function AuctionScreen() {
                     <div className="bidder-name" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
                         {/* Find logo from teams array */}
                         {teams.find(t => t.name === data.bidderTeam)?.logo &&
-                            <img src={teams.find(t => t.name === data.bidderTeam).logo} style={{ width: 60, height: 60, borderRadius: '50%', border: '2px solid gold' }} />
+                            <img src={(teams.find(t => t.name === data.bidderTeam).logo || '').replace('via.placeholder.com', 'placehold.co')} style={{ width: 60, height: 60, borderRadius: '50%', border: '2px solid gold' }} />
                         }
                         {data.bidderTeam || 'NO BIDS'}
                     </div>
@@ -182,7 +183,7 @@ export default function AuctionScreen() {
                             className={`team-list-item ${t.name === data.bidderTeam ? 'active-bidder' : ''}`}
                         >
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <img src={t.logo || 'https://via.placeholder.com/40'} style={{ width: 40, height: 40, borderRadius: '8px', objectFit: 'cover' }} />
+                                <img src={(t.logo || '').replace('via.placeholder.com', 'placehold.co') || 'https://placehold.co/40'} style={{ width: 40, height: 40, borderRadius: '8px', objectFit: 'cover' }} />
                                 <span className="team-name">{t.name}</span>
                             </div>
                             <span className="team-wallet">₹{t.wallet}</span>

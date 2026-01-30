@@ -1,6 +1,124 @@
 import { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, doc, setDoc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, updateDoc, onSnapshot, writeBatch } from 'firebase/firestore';
+
+// ... (in AuctionController)
+
+const selectPlayer = async (player) => {
+    if (currentAuction?.status === 'live') {
+        if (!confirm("Auction in progress! Switch player?")) return;
+    }
+
+    await setDoc(doc(db, 'auction', 'live'), {
+        ...player,
+        currentBid: player.basePrice || 500,
+        bidderTeam: 'None',
+        status: 'live',
+        bidHistory: [] // Initialize history
+    });
+};
+
+const increaseBid = async (amount) => {
+    if (!currentAuction || currentAuction.status !== 'live') return;
+
+    const previousBid = Number(currentAuction.currentBid);
+    const newBid = previousBid + amount;
+
+    // Push current bid to history before updating
+    const newHistory = [...(currentAuction.bidHistory || []), previousBid];
+
+    await updateDoc(doc(db, 'auction', 'live'), {
+        currentBid: newBid,
+        bidHistory: newHistory
+    });
+};
+
+const undoBid = async () => {
+    if (!currentAuction || !currentAuction.bidHistory || currentAuction.bidHistory.length === 0) return;
+
+    const history = [...currentAuction.bidHistory];
+    const previousBid = history.pop(); // Get last bid
+
+    await updateDoc(doc(db, 'auction', 'live'), {
+        currentBid: previousBid,
+        bidHistory: history
+    });
+};
+
+const setCustomBid = async () => {
+    if (!currentAuction || !customPrice) return;
+    const val = Number(customPrice);
+    if (isNaN(val) || val <= 0) return alert("Invalid amount");
+
+    const previousBid = Number(currentAuction.currentBid);
+    const newHistory = [...(currentAuction.bidHistory || []), previousBid];
+
+    await updateDoc(doc(db, 'auction', 'live'), {
+        currentBid: val,
+        bidHistory: newHistory
+    });
+    setCustomPrice('');
+};
+
+const assignBidder = async (teamName) => {
+    if (!currentAuction || currentAuction.status !== 'live') return;
+    await updateDoc(doc(db, 'auction', 'live'), {
+        bidderTeam: teamName
+    });
+};
+
+const markSold = async () => {
+    if (!currentAuction || currentAuction.bidderTeam === 'None') return alert("No bidder assigned!");
+
+    // 1. Find Winning Team
+    const winningTeam = teams.find(t => t.name === currentAuction.bidderTeam);
+    if (!winningTeam) return alert("Winning team not found!");
+
+    const currentBidVal = Number(currentAuction.currentBid);
+    const teamWalletVal = Number(winningTeam.wallet);
+
+    if (teamWalletVal < currentBidVal) {
+        return alert(`Insufficient Funds! Team only has ₹${teamWalletVal}`);
+    }
+
+    // --- ATOMIC BATCH WRITE START ---
+    const batch = writeBatch(db);
+
+    // A. Update Auction Status
+    const auctionRef = doc(db, 'auction', 'live');
+    batch.update(auctionRef, { status: 'sold' });
+
+    // B. Deduct Wallet
+    const newWallet = teamWalletVal - currentBidVal;
+    const teamRef = doc(db, 'teams', winningTeam.id);
+    batch.update(teamRef, { wallet: newWallet });
+
+    // C. Update Player Status
+    const playerRef = doc(db, 'registrations', currentAuction.id);
+    batch.update(playerRef, {
+        status: 'sold',
+        teamId: winningTeam.id,
+        soldPrice: currentBidVal
+    });
+
+    try {
+        await batch.commit();
+        // --- ATOMIC BATCH WRITE END ---
+
+        // 5. Update Local State Immediately (Optimistic UI)
+        setPlayers(prev => prev.filter(p => p.id !== currentAuction.id));
+        setTeams(prev => prev.map(t => t.id === winningTeam.id ? { ...t, wallet: newWallet } : t).sort((a, b) => b.wallet - a.wallet));
+
+        // 6. Reset Screen after delay
+        setTimeout(async () => {
+            await setDoc(doc(db, 'auction', 'live'), { status: 'waiting', currentPlayer: null });
+        }, 3000);
+
+    } catch (error) {
+        console.error("Batch failed!", error);
+        alert("Transaction failed! Data not saved.");
+    }
+};
 import './AuctionController.css';
 import { motion, AnimatePresence } from 'framer-motion';
 

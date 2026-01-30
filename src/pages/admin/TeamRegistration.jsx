@@ -69,7 +69,7 @@ export default function TeamRegistration() {
         try {
             await addDoc(collection(db, 'teams'), {
                 name: teamName,
-                logo: teamLogo || 'https://via.placeholder.com/100?text=TEAM', // Save Logo
+                logo: teamLogo || 'https://placehold.co/100?text=TEAM', // Save Logo
                 wallet: 15000,
                 managers: assignedManagers
             });
@@ -126,9 +126,39 @@ export default function TeamRegistration() {
                             onChange={(e) => {
                                 const file = e.target.files[0];
                                 if (file) {
+                                    // Resize Image using Canvas
                                     const reader = new FileReader();
-                                    reader.onloadend = () => {
-                                        setTeamLogo(reader.result);
+                                    reader.onload = (readerEvent) => {
+                                        const img = new Image();
+                                        img.onload = () => {
+                                            const canvas = document.createElement('canvas');
+                                            const MAX_WIDTH = 300;
+                                            const MAX_HEIGHT = 300;
+                                            let width = img.width;
+                                            let height = img.height;
+
+                                            if (width > height) {
+                                                if (width > MAX_WIDTH) {
+                                                    height *= MAX_WIDTH / width;
+                                                    width = MAX_WIDTH;
+                                                }
+                                            } else {
+                                                if (height > MAX_HEIGHT) {
+                                                    width *= MAX_HEIGHT / height;
+                                                    height = MAX_HEIGHT;
+                                                }
+                                            }
+
+                                            canvas.width = width;
+                                            canvas.height = height;
+                                            const ctx = canvas.getContext('2d');
+                                            ctx.drawImage(img, 0, 0, width, height);
+
+                                            // Convert to Base64 (JPEG 70% quality)
+                                            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                                            setTeamLogo(dataUrl);
+                                        };
+                                        img.src = readerEvent.target.result;
                                     };
                                     reader.readAsDataURL(file);
                                 }
@@ -186,7 +216,7 @@ export default function TeamRegistration() {
                     {teams.map(team => (
                         <tr key={team.id}>
                             <td style={{ fontWeight: 'bold', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                <img src={team.logo || 'https://via.placeholder.com/50'} style={{ width: 50, height: 50, borderRadius: '10px', objectFit: 'cover' }} />
+                                <img src={(team.logo || '').replace('via.placeholder.com', 'placehold.co') || 'https://placehold.co/50'} style={{ width: 50, height: 50, borderRadius: '10px', objectFit: 'cover' }} />
                                 {team.name}
                             </td>
                             <td>
