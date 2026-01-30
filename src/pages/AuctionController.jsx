@@ -9,6 +9,10 @@ export default function AuctionController() {
     const [teams, setTeams] = useState([]);
     const [currentAuction, setCurrentAuction] = useState(null);
 
+    // New Features State
+    const [searchTerm, setSearchTerm] = useState('');
+    const [customPrice, setCustomPrice] = useState('');
+
     // 1. Listen to Real-time Auction Data
     useEffect(() => {
         const unsub = onSnapshot(doc(db, 'auction', 'live'), (doc) => {
@@ -49,10 +53,37 @@ export default function AuctionController() {
 
     const increaseBid = async (amount) => {
         if (!currentAuction || currentAuction.status !== 'live') return;
-        const newBid = Number(currentAuction.currentBid) + amount;
+
+        // Save previous bid for Undo
+        const previousBid = Number(currentAuction.currentBid);
+        const newBid = previousBid + amount;
+
         await updateDoc(doc(db, 'auction', 'live'), {
-            currentBid: newBid
+            currentBid: newBid,
+            lastBid: previousBid // Store previous state
         });
+    };
+
+    const undoBid = async () => {
+        if (!currentAuction || !currentAuction.lastBid) return;
+        await updateDoc(doc(db, 'auction', 'live'), {
+            currentBid: currentAuction.lastBid,
+            lastBid: null // Clear history after undo (single step undo)
+        });
+    };
+
+    const setCustomBid = async () => {
+        if (!currentAuction || !customPrice) return;
+        const val = Number(customPrice);
+        if (isNaN(val) || val <= 0) return alert("Invalid amount");
+
+        const previousBid = Number(currentAuction.currentBid);
+
+        await updateDoc(doc(db, 'auction', 'live'), {
+            currentBid: val,
+            lastBid: previousBid
+        });
+        setCustomPrice('');
     };
 
     const assignBidder = async (teamName) => {
@@ -124,23 +155,41 @@ export default function AuctionController() {
         <div className="auction-container">
             {/* LEFT: Player Pool */}
             <div className="player-pool-panel">
-                <div className="panel-header">PLAYER POOL ({players.filter(p => p.status !== 'sold').length})</div>
+                <div className="panel-header">
+                    PLAYER POOL ({players.filter(p => p.status !== 'sold').length})
+                </div>
+                {/* Search Input */}
+                <input
+                    type="text"
+                    placeholder="Search player..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{
+                        width: '90%', margin: '10px auto', display: 'block',
+                        padding: '8px', background: '#333', border: '1px solid #555',
+                        color: 'white', borderRadius: '4px'
+                    }}
+                />
+
                 <div className="player-list">
-                    {players.filter(p => p.status !== 'sold').map(p => (
-                        <div key={p.id}
-                            className={`pool-item ${currentAuction?.id === p.id ? 'active' : ''}`}
-                            onClick={() => selectPlayer(p)}
-                            style={{ opacity: p.status === 'unsold' ? 0.6 : 1, border: p.status === 'unsold' ? '1px dashed #f87171' : '' }}
-                        >
-                            <img src={p.photo} className="pool-avatar" alt="p" />
-                            <div>
-                                <div style={{ fontWeight: 'bold' }}>{p.name}</div>
-                                <div style={{ fontSize: '0.8rem', color: '#888' }}>
-                                    {p.position} {p.status === 'unsold' && <span style={{ color: '#f87171', fontWeight: 'bold' }}>(UNSOLD)</span>}
+                    {players
+                        .filter(p => p.status !== 'sold')
+                        .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                        .map(p => (
+                            <div key={p.id}
+                                className={`pool-item ${currentAuction?.id === p.id ? 'active' : ''}`}
+                                onClick={() => selectPlayer(p)}
+                                style={{ opacity: p.status === 'unsold' ? 0.6 : 1, border: p.status === 'unsold' ? '1px dashed #f87171' : '' }}
+                            >
+                                <img src={p.photo} className="pool-avatar" alt="p" />
+                                <div>
+                                    <div style={{ fontWeight: 'bold' }}>{p.name}</div>
+                                    <div style={{ fontSize: '0.8rem', color: '#888' }}>
+                                        {p.position} {p.status === 'unsold' && <span style={{ color: '#f87171', fontWeight: 'bold' }}>(UNSOLD)</span>}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
                 </div>
             </div>
 
@@ -170,6 +219,20 @@ export default function AuctionController() {
                                 <button className="control-btn" onClick={() => increaseBid(100)}>+100</button>
                                 <button className="control-btn" onClick={() => increaseBid(200)}>+200</button>
                                 <button className="control-btn" onClick={() => increaseBid(500)}>+500</button>
+
+                                {/* Custom Bid Input */}
+                                <div style={{ display: 'flex', gap: '5px', gridColumn: 'span 3' }}>
+                                    <input
+                                        type="number"
+                                        placeholder="Custom Amount"
+                                        value={customPrice}
+                                        onChange={(e) => setCustomPrice(e.target.value)}
+                                        style={{ flex: 1, padding: '5px', background: '#222', border: '1px solid #444', color: 'white' }}
+                                    />
+                                    <button className="control-btn" style={{ fontSize: '0.8rem', width: 'auto' }} onClick={setCustomBid}>SET</button>
+                                </div>
+
+                                <button className="control-btn" style={{ borderColor: '#ef4444', color: '#ef4444' }} onClick={undoBid}>↩ UNDO</button>
                                 <button className="control-btn" style={{ borderColor: '#555', color: '#888' }} onClick={markUnsold}>UNSOLD</button>
                                 <button className="control-btn sold" onClick={markSold}>✓ SOLD TO {currentAuction.bidderTeam}</button>
                             </div>
@@ -203,6 +266,44 @@ export default function AuctionController() {
                             <div className="team-wallet">₹{t.wallet}</div>
                         </div>
                     ))}
+                </div>
+
+                {/* SQUAD REVEAL CONTROLS */}
+                {/* SQUAD REVEAL CONTROLS */}
+                <div style={{ marginTop: '20px', borderTop: '2px solid #333', paddingTop: '15px' }}>
+                    <h3 style={{ fontSize: '1rem', color: '#888', marginBottom: '10px', letterSpacing: '2px' }}>SQUAD REVEAL</h3>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {teams.map(team => (
+                            <button
+                                key={team.id}
+                                className="control-btn"
+                                style={{
+                                    background: '#222',
+                                    fontSize: '0.85rem',
+                                    padding: '8px 12px',
+                                    border: '1px solid #444',
+                                    flex: '1 0 45%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '5px'
+                                }}
+                                onClick={async () => {
+                                    if (!confirm(`Show reveal for ${team.name}?`)) return;
+                                    await setDoc(doc(db, 'auction', 'live'), {
+                                        status: 'reveal',
+                                        viewTeamId: team.id,
+                                        viewTeamName: team.name,
+                                        viewTeamLogo: team.logo, // Pass Logo
+                                        viewTeamWallet: team.wallet
+                                    });
+                                }}
+                            >
+                                {team.logo && <img src={team.logo} style={{ width: 20, height: 20, borderRadius: '50%' }} />}
+                                SHOW {team.name}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>

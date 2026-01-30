@@ -9,10 +9,12 @@ export default function TeamRegistration() {
     const [teams, setTeams] = useState([]);
     const [managers, setManagers] = useState([]);
     const [teamName, setTeamName] = useState('');
+    const [teamLogo, setTeamLogo] = useState(''); // New State for Logo
     const [selectedManagers, setSelectedManagers] = useState([]); // Array of IDs
     const [loading, setLoading] = useState(true);
 
     const fetchData = async () => {
+        // ... existing logic ...
         // Fetch Teams
         const tSnap = await getDocs(collection(db, 'teams'));
         const teamData = tSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -67,15 +69,14 @@ export default function TeamRegistration() {
         try {
             await addDoc(collection(db, 'teams'), {
                 name: teamName,
+                logo: teamLogo || 'https://via.placeholder.com/100?text=TEAM', // Save Logo
                 wallet: 15000,
                 managers: assignedManagers
             });
 
-            // Optional: Mark managers as 'assigned' in their own doc if needed, 
-            // but for now just linking them to the team is enough.
-
             toast.success("Team Created Successfully!");
             setTeamName('');
+            setTeamLogo('');
             setSelectedManagers([]);
             fetchData();
         } catch (err) {
@@ -116,6 +117,32 @@ export default function TeamRegistration() {
                         />
                     </div>
 
+                    {/* Team Logo Upload */}
+                    <div style={{ marginBottom: '20px' }}>
+                        <label style={{ display: 'block', marginBottom: '10px', color: '#888' }}>TEAM LOGO (Upload)</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                        setTeamLogo(reader.result);
+                                    };
+                                    reader.readAsDataURL(file);
+                                }
+                            }}
+                            style={{ width: '100%', background: '#000', border: '1px solid #444', color: 'white', padding: '15px', borderRadius: '4px' }}
+                        />
+                        {teamLogo && (
+                            <div style={{ marginTop: '10px' }}>
+                                <p style={{ fontSize: '0.8rem', color: '#aaa' }}>Preview:</p>
+                                <img src={teamLogo} alt="Preview" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '10px', border: '1px solid #555' }} />
+                            </div>
+                        )}
+                    </div>
+
                     {/* Manager Selection */}
                     <div style={{ marginBottom: '20px' }}>
                         <label style={{ display: 'block', marginBottom: '10px', color: '#888' }}>
@@ -149,7 +176,7 @@ export default function TeamRegistration() {
             <table className="data-table">
                 <thead>
                     <tr>
-                        <th>TEAM NAME</th>
+                        <th>TEAM</th>
                         <th>MANAGERS</th>
                         <th>WALLET</th>
                         <th>ACTION</th>
@@ -158,7 +185,10 @@ export default function TeamRegistration() {
                 <tbody>
                     {teams.map(team => (
                         <tr key={team.id}>
-                            <td style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>{team.name}</td>
+                            <td style={{ fontWeight: 'bold', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                <img src={team.logo || 'https://via.placeholder.com/50'} style={{ width: 50, height: 50, borderRadius: '10px', objectFit: 'cover' }} />
+                                {team.name}
+                            </td>
                             <td>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                                     {team.managers && team.managers.length > 0 ? team.managers.map(m => (

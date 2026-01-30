@@ -108,6 +108,65 @@ export default function AdminDashboard() {
     const [photoPreview, setPhotoPreview] = useState(null);
     const [creating, setCreating] = useState(false);
 
+    // EDIT USER STATE
+    const [isEditing, setIsEditing] = useState(false);
+    const [editFormData, setEditFormData] = useState({});
+
+    // Handlers for Editing
+    const startEditing = () => {
+        setEditFormData({ ...selectedUser });
+        setIsEditing(true);
+    };
+
+    const cancelEditing = () => {
+        setIsEditing(false);
+        setEditFormData({});
+    };
+
+    const handleEditChange = (e) => {
+        const { name, value } = e.target;
+        setEditFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleEditPhotoUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 5000000) return alert("Photo too big! Max 5MB allowed.");
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800;
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+                    setEditFormData(prev => ({ ...prev, photo: compressedBase64 }));
+                };
+            };
+        }
+    };
+
+    const saveEditedUser = async () => {
+        try {
+            await updateDoc(doc(db, 'registrations', selectedUser.id), editFormData);
+            // Local update
+            setUsers(users.map(u => u.id === selectedUser.id ? { ...u, ...editFormData } : u));
+            setSelectedUser(prev => ({ ...prev, ...editFormData }));
+            setIsEditing(false);
+            alert("Updated successfully!");
+        } catch (err) {
+            console.error("Error updating user:", err);
+            alert("Failed to update user.");
+        }
+    };
+
     const handleAddUserChange = (e) => {
         setNewUser({ ...newUser, [e.target.name]: e.target.value });
     };
@@ -368,7 +427,7 @@ export default function AdminDashboard() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={() => setSelectedUser(null)}
+                        onClick={() => { setSelectedUser(null); setIsEditing(false); }}
                     >
                         <motion.div
                             className="profile-modal"
@@ -377,51 +436,150 @@ export default function AdminDashboard() {
                             exit={{ scale: 0.8, opacity: 0, y: 50 }}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <button className="close-modal-btn" onClick={() => setSelectedUser(null)}>✕</button>
+                            <button className="close-modal-btn" onClick={() => { setSelectedUser(null); setIsEditing(false); }}>✕</button>
 
-                            <div className="modal-header">
-                                <div style={{ position: 'relative', display: 'inline-block' }}>
-                                    <img src={selectedUser.photo} alt={selectedUser.name} className="modal-avatar" />
-                                    <a href={selectedUser.photo} download={`${selectedUser.name}-photo.jpg`} className="download-badge" title="Download Photo">
-                                        ⬇
-                                    </a>
-                                </div>
-                                <div>
-                                    <h2 className="modal-name">{selectedUser.name}</h2>
-                                    <p className="modal-role">{selectedUser.role} • {selectedUser.class}</p>
-                                </div>
-                            </div>
+                            {!isEditing ? (
+                                // VIEW MODE
+                                <>
+                                    <div className="modal-header">
+                                        <div style={{ position: 'relative', display: 'inline-block' }}>
+                                            <img src={selectedUser.photo} alt={selectedUser.name} className="modal-avatar" />
+                                            <a href={selectedUser.photo} download={`${selectedUser.name}-photo.jpg`} className="download-badge" title="Download Photo">
+                                                ⬇
+                                            </a>
+                                        </div>
+                                        <div>
+                                            <h2 className="modal-name">{selectedUser.name}</h2>
+                                            <p className="modal-role">{selectedUser.role} • {selectedUser.class}</p>
+                                        </div>
+                                    </div>
 
-                            <div className="modal-body">
-                                <div className="detail-row">
-                                    <span>PHONE</span>
-                                    <strong>{selectedUser.phone}</strong>
-                                </div>
-                                <div className="detail-row">
-                                    <span>AGE</span>
-                                    <strong>{selectedUser.age || 'N/A'}</strong>
-                                </div>
-                                <div className="detail-row">
-                                    <span>POSITIONS</span>
-                                    <strong>{selectedUser.position || 'N/A'}</strong>
-                                </div>
-                                <div className="detail-row">
-                                    <span>STATUS</span>
-                                    <span className={`status-pill status-${selectedUser.status}`}>
-                                        {selectedUser.status}
-                                    </span>
-                                </div>
-                            </div>
+                                    <div className="modal-body">
+                                        <div className="detail-row">
+                                            <span>PHONE</span>
+                                            <strong>{selectedUser.phone}</strong>
+                                        </div>
+                                        <div className="detail-row">
+                                            <span>AGE</span>
+                                            <strong>{selectedUser.age || 'N/A'}</strong>
+                                        </div>
+                                        <div className="detail-row">
+                                            <span>POSITIONS</span>
+                                            <strong>{selectedUser.position || 'N/A'}</strong>
+                                        </div>
+                                        <div className="detail-row">
+                                            <span>STATUS</span>
+                                            <span className={`status-pill status-${selectedUser.status}`}>
+                                                {selectedUser.status}
+                                            </span>
+                                        </div>
+                                    </div>
 
-                            <div className="modal-actions">
-                                {selectedUser.status === 'pending' && (
-                                    <>
-                                        <button className="modal-btn approve" onClick={() => updateStatus(selectedUser.id, 'approved')}>✓ APPROVE</button>
-                                        <button className="modal-btn reject" onClick={() => updateStatus(selectedUser.id, 'rejected')}>MY REJECT</button>
-                                    </>
-                                )}
-                                <button className="modal-btn delete" onClick={() => deleteUser(selectedUser.id)}>DELETE USER</button>
-                            </div>
+                                    <div className="modal-actions">
+                                        {selectedUser.status === 'pending' && (
+                                            <>
+                                                <button className="modal-btn approve" onClick={() => updateStatus(selectedUser.id, 'approved')}>✓ APPROVE</button>
+                                                <button className="modal-btn reject" onClick={() => updateStatus(selectedUser.id, 'rejected')}>MY REJECT</button>
+                                            </>
+                                        )}
+                                        <button className="modal-btn" style={{ background: '#444', color: 'white' }} onClick={startEditing}>EDIT DETAILS</button>
+                                        <button className="modal-btn delete" onClick={() => deleteUser(selectedUser.id)}>DELETE USER</button>
+                                    </div>
+                                </>
+                            ) : (
+                                // EDIT MODE
+                                <>
+                                    <h2 style={{ color: 'white', marginBottom: '15px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>EDIT DETAILS</h2>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '60vh', overflowY: 'auto', paddingRight: '5px' }}>
+
+                                        {/* Photo Edit */}
+                                        <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+                                            <img
+                                                src={editFormData.photo}
+                                                alt="Preview"
+                                                style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '2px solid #FEBF00' }}
+                                            />
+                                            <div style={{ marginTop: '5px' }}>
+                                                <label htmlFor="edit-photo" style={{ cursor: 'pointer', color: '#FEBF00', fontSize: '0.9rem', textDecoration: 'underline' }}>Change Photo</label>
+                                                <input id="edit-photo" type="file" accept="image/*" onChange={handleEditPhotoUpload} style={{ display: 'none' }} />
+                                            </div>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label style={{ color: '#888', fontSize: '0.8rem', display: 'block', marginBottom: '5px' }}>FULL NAME</label>
+                                            <input
+                                                style={{ padding: '10px', background: '#222', color: 'white', border: '1px solid #333', width: '100%', boxSizing: 'border-box', borderRadius: '4px' }}
+                                                name="name"
+                                                value={editFormData.name || ''}
+                                                onChange={handleEditChange}
+                                            />
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                            <div className="form-group" style={{ flex: 1 }}>
+                                                <label style={{ color: '#888', fontSize: '0.8rem', display: 'block', marginBottom: '5px' }}>ROLE</label>
+                                                <select
+                                                    style={{ padding: '10px', background: '#222', color: 'white', border: '1px solid #333', width: '100%', boxSizing: 'border-box', borderRadius: '4px' }}
+                                                    name="role"
+                                                    value={editFormData.role || 'Player'}
+                                                    onChange={handleEditChange}
+                                                >
+                                                    <option value="Player">Player</option>
+                                                    <option value="Manager">Manager</option>
+                                                </select>
+                                            </div>
+                                            <div className="form-group" style={{ flex: 1 }}>
+                                                <label style={{ color: '#888', fontSize: '0.8rem', display: 'block', marginBottom: '5px' }}>CLASS</label>
+                                                <input
+                                                    style={{ padding: '10px', background: '#222', color: 'white', border: '1px solid #333', width: '100%', boxSizing: 'border-box', borderRadius: '4px' }}
+                                                    name="class"
+                                                    value={editFormData.class || ''}
+                                                    onChange={handleEditChange}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label style={{ color: '#888', fontSize: '0.8rem', display: 'block', marginBottom: '5px' }}>PHONE</label>
+                                            <input
+                                                style={{ padding: '10px', background: '#222', color: 'white', border: '1px solid #333', width: '100%', boxSizing: 'border-box', borderRadius: '4px' }}
+                                                name="phone"
+                                                value={editFormData.phone || ''}
+                                                onChange={handleEditChange}
+                                            />
+                                        </div>
+
+                                        {editFormData.role === 'Player' && (
+                                            <div style={{ display: 'flex', gap: '10px' }}>
+                                                <div className="form-group" style={{ flex: 1 }}>
+                                                    <label style={{ color: '#888', fontSize: '0.8rem', display: 'block', marginBottom: '5px' }}>AGE</label>
+                                                    <input
+                                                        style={{ padding: '10px', background: '#222', color: 'white', border: '1px solid #333', width: '100%', boxSizing: 'border-box', borderRadius: '4px' }}
+                                                        type="number"
+                                                        name="age"
+                                                        value={editFormData.age || ''}
+                                                        onChange={handleEditChange}
+                                                    />
+                                                </div>
+                                                <div className="form-group" style={{ flex: 2 }}>
+                                                    <label style={{ color: '#888', fontSize: '0.8rem', display: 'block', marginBottom: '5px' }}>POSITION</label>
+                                                    <input
+                                                        style={{ padding: '10px', background: '#222', color: 'white', border: '1px solid #333', width: '100%', boxSizing: 'border-box', borderRadius: '4px' }}
+                                                        name="position"
+                                                        value={editFormData.position || ''}
+                                                        onChange={handleEditChange}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="modal-actions" style={{ marginTop: '20px', borderTop: '1px solid #333', paddingTop: '15px' }}>
+                                        <button className="modal-btn approve" onClick={saveEditedUser}>SAVE CHANGES</button>
+                                        <button className="modal-btn" style={{ background: 'transparent', border: '1px solid #555', color: 'white' }} onClick={cancelEditing}>CANCEL</button>
+                                    </div>
+                                </>
+                            )}
                         </motion.div>
                     </motion.div>
                 )}
