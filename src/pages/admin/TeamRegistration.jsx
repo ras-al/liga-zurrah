@@ -2,31 +2,26 @@ import { useState, useEffect } from 'react';
 import { db } from '../../firebase';
 import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import AdminLayout from '../../components/AdminLayout';
-import Loading from '../../components/Loading'; // Kept as per original
+import Loading from '../../components/Loading';
 import toast from 'react-hot-toast';
 
 export default function TeamRegistration() {
     const [teams, setTeams] = useState([]);
     const [managers, setManagers] = useState([]);
     const [teamName, setTeamName] = useState('');
-    const [teamLogo, setTeamLogo] = useState(''); // New State for Logo
-    const [selectedManagers, setSelectedManagers] = useState([]); // Array of IDs
+    const [teamLogo, setTeamLogo] = useState('');
+    const [selectedManagers, setSelectedManagers] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const fetchData = async () => {
-        // ... existing logic ...
-        // Fetch Teams
         const tSnap = await getDocs(collection(db, 'teams'));
         const teamData = tSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         setTeams(teamData);
 
-        // Collect assigned IDs
         const assignedIds = new Set();
         teamData.forEach(t => {
             if (t.managers) t.managers.forEach(m => assignedIds.add(m.id));
         });
-
-        // Fetch Managers
         const pSnap = await getDocs(collection(db, 'registrations'));
         const mgrs = pSnap.docs
             .map(d => ({ id: d.id, ...d.data() }))
@@ -58,7 +53,6 @@ export default function TeamRegistration() {
             return toast.error("A team must have at least 2 Managers!");
         }
 
-        // Get full manager objects for storage (or just names)
         const assignedManagers = managers.filter(m => selectedManagers.includes(m.id)).map(m => ({
             id: m.id,
             name: m.name,
@@ -69,8 +63,8 @@ export default function TeamRegistration() {
         try {
             await addDoc(collection(db, 'teams'), {
                 name: teamName,
-                logo: teamLogo || 'https://placehold.co/100?text=TEAM', // Save Logo
-                wallet: 15000,
+                logo: teamLogo || 'https://placehold.co/100?text=TEAM',
+                wallet: 2000,
                 managers: assignedManagers
             });
 
@@ -92,7 +86,7 @@ export default function TeamRegistration() {
         }
     }
 
-    if (loading) return <Loading />; // Using generic loading for now
+    if (loading) return <Loading />;
 
     return (
         <AdminLayout>

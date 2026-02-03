@@ -3,7 +3,7 @@ import { db } from '../firebase';
 import { collection, getDocs, deleteDoc, updateDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore';
 import * as XLSX from 'xlsx';
 import AdminLayout from '../components/AdminLayout';
-import Loading from '../components/Loading'; // Can be removed if unused, but keeping for safety
+import Loading from '../components/Loading';
 import SkeletonRow from '../components/SkeletonRow';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -20,14 +20,12 @@ export default function AdminDashboard() {
     const fetchUsers = async () => {
         const snap = await getDocs(collection(db, 'registrations'));
         const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        // Stack Order: Newest First
         data.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
         setUsers(data);
         setLoading(false);
     };
 
     const updateStatus = async (id, status) => {
-        // Optimistic UI update
         setUsers(users.map(u => u.id === id ? { ...u, status } : u));
         await updateDoc(doc(db, 'registrations', id), { status });
         if (selectedUser?.id === id) setSelectedUser(prev => ({ ...prev, status }));
@@ -40,8 +38,31 @@ export default function AdminDashboard() {
         if (selectedUser?.id === id) setSelectedUser(null);
     };
 
+    const toggleTag = async (id, field, currentValue) => {
+        const newValue = !currentValue;
+        const user = users.find(u => u.id === id);
+        let newBasePrice = 30;
+
+        if (field === 'isMarquee') {
+            if (newValue) newBasePrice = 100;
+            else if (user.isSuper) newBasePrice = 50;
+        } else if (field === 'isSuper') {
+            if (user.isMarquee) newBasePrice = 100;
+            else if (newValue) newBasePrice = 50;
+        }
+
+        setUsers(users.map(u => u.id === id ? { ...u, [field]: newValue, basePrice: newBasePrice } : u));
+
+        try {
+            await updateDoc(doc(db, 'registrations', id), { [field]: newValue, basePrice: newBasePrice });
+        } catch (error) {
+            console.error("Error toggling tag:", error);
+            alert("Failed to update tag");
+            setUsers(users.map(u => u.id === id ? { ...u, [field]: currentValue, basePrice: user.basePrice } : u));
+        }
+    };
+
     const exportExcel = () => {
-        // Sanitize data: Remove photo (too large) and format dates
         const dataToExport = users.map(({ photo, timestamp, ...rest }) => ({
             ...rest,
             RegistrationDate: timestamp?.toDate ? timestamp.toDate().toLocaleString() : ''
@@ -58,12 +79,13 @@ export default function AdminDashboard() {
     // Stats Calculation
     const totalPlayers = users.filter(u => u.role === 'Player').length;
     const totalManagers = users.filter(u => u.role === 'Manager').length;
+    const marqueeCount = users.filter(u => u.role === 'Player' && u.isMarquee).length;
+    const superCount = users.filter(u => u.role === 'Player' && u.isSuper).length;
 
     const positionCounts = {};
     if (filter === 'Player') {
         users.filter(u => u.role === 'Player').forEach(u => {
             if (u.position) {
-                // Split by comma in case of multi-select, trim whitespace
                 u.position.split(',').forEach(p => {
                     const cleanPos = p.trim();
                     if (cleanPos) positionCounts[cleanPos] = (positionCounts[cleanPos] || 0) + 1;
@@ -71,8 +93,6 @@ export default function AdminDashboard() {
             }
         });
     }
-
-    // Helper to find duplicate phones
     const getDuplicatePhones = () => {
         const phoneCounts = {};
         users.forEach(u => {
@@ -94,8 +114,15 @@ export default function AdminDashboard() {
             u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             u.phone?.includes(searchTerm);
 
-        // Position Filter (loose match to allow multi-select "Striker, Winger" to show up for "Striker")
-        const matchesPos = !posFilter || (u.position && u.position.includes(posFilter));
+        // Position/Tag Filter
+        let matchesPos = true;
+        if (posFilter === 'Marquee') {
+            matchesPos = u.isMarquee;
+        } else if (posFilter === 'Super') {
+            matchesPos = u.isSuper;
+        } else if (posFilter) {
+            matchesPos = u.position && u.position.includes(posFilter);
+        }
 
         return matchesRole && matchesSearch && matchesPos;
     });
@@ -210,13 +237,19 @@ export default function AdminDashboard() {
                 phone: newUser.phone,
                 class: newUser.class,
                 role: newUser.role,
-                photo: newUser.photo || 'https://via.placeholder.com/150', // Default if none
+                photo: newUser.photo || 'https://via.placeholder.com/150',
                 timestamp: serverTimestamp(),
-                status: 'approved', // Auto-approve admin added users
+                status: 'approved',
                 soldPrice: 0,
                 teamId: null,
-                basePrice: newUser.role === 'Player' ? 500 : 0
+                basePrice: 0
             };
+
+            if (newUser.role === 'Player') {
+                formData.age = newUser.age;
+                formData.position = newUser.position;
+                formData.basePrice = 30;
+            }
 
             if (newUser.role === 'Player') {
                 formData.age = newUser.age;
@@ -224,16 +257,11 @@ export default function AdminDashboard() {
             }
 
             await addDoc(collection(db, 'registrations'), formData);
-
-            // Refresh and Close
             await fetchUsers();
             setShowAddModal(false);
-
-            // Reset Form (Naive reset)
             setNewUser({ name: '', phone: '', class: '', role: 'Player', age: '', position: '', photo: '' });
             setPhotoPreview(null);
-
-            alert("User Added Successfully!"); // Simple alert or use toast if available
+            alert("User Added Successfully!");
         } catch (error) {
             console.error(error);
             alert("Error adding user");
@@ -264,7 +292,7 @@ export default function AdminDashboard() {
                                 setShowDuplicatesOnly(false);
                             } else {
                                 setShowDuplicatesOnly(true);
-                                setFilter(null); // Clear role filter to search across all roles
+                                setFilter(null);
                                 setPosFilter(null);
                             }
                         }}
@@ -308,6 +336,24 @@ export default function AdminDashboard() {
                     >
                         ALL ({totalPlayers})
                     </button>
+
+                    {/* NEW: Marquee/Super Filters */}
+                    <button
+                        onClick={() => setPosFilter(posFilter === 'Marquee' ? null : 'Marquee')}
+                        className={`filter-pill ${posFilter === 'Marquee' ? 'active' : ''}`}
+                        style={{ border: '1px solid #fbbf24', color: posFilter === 'Marquee' ? 'black' : '#fbbf24', background: posFilter === 'Marquee' ? '#fbbf24' : 'transparent' }}
+                    >
+                        MARQUEE ({marqueeCount})
+                    </button>
+                    <button
+                        onClick={() => setPosFilter(posFilter === 'Super' ? null : 'Super')}
+                        className={`filter-pill ${posFilter === 'Super' ? 'active' : ''}`}
+                        style={{ border: '1px solid #a855f7', color: posFilter === 'Super' ? 'white' : '#a855f7', background: posFilter === 'Super' ? '#a855f7' : 'transparent' }}
+                    >
+                        SUPER ({superCount})
+                    </button>
+
+                    {/* Standard Position Filters */}
                     {Object.entries(positionCounts).map(([pos, count]) => (
                         <button
                             key={pos}
@@ -343,6 +389,11 @@ export default function AdminDashboard() {
                                 <td data-label="AVATAR"><img src={u.photo} style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid #333' }} /></td>
                                 <td data-label="NAME">
                                     <div style={{ fontWeight: 'bold' }}>{u.name}</div>
+                                    {/* VISUAL BADGES */}
+                                    <div style={{ display: 'flex', gap: '5px', marginTop: '2px' }}>
+                                        {u.isMarquee && <span style={{ fontSize: '0.6rem', background: '#fbbf24', color: 'black', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>MARQUEE</span>}
+                                        {u.isSuper && <span style={{ fontSize: '0.6rem', background: '#a855f7', color: 'white', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>SUPER</span>}
+                                    </div>
                                 </td>
                                 <td data-label="PHONE" style={{ color: '#666', fontFamily: 'monospace', fontSize: '1rem' }}>{u.phone}</td>
                                 <td data-label="CLASS">{u.class}</td>
@@ -353,8 +404,55 @@ export default function AdminDashboard() {
                                     </span>
                                 </td>
                                 <td data-label="ACTIONS" onClick={(e) => e.stopPropagation()}>
-                                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                                        <button onClick={() => deleteUser(u.id)} style={{ background: 'transparent', border: '1px solid #444', color: '#888', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>DEL</button>
+                                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                        {/* TAGGING BUTTONS */}
+                                        {u.role === 'Player' && (
+                                            <>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); toggleTag(u.id, 'isMarquee', u.isMarquee); }}
+                                                    style={{
+                                                        width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold', transition: 'all 0.2s',
+                                                        background: u.isMarquee ? '#fbbf24' : '#1a1a1a',
+                                                        color: u.isMarquee ? '#000' : '#555',
+                                                        border: u.isMarquee ? 'none' : '1px solid #333',
+                                                        boxShadow: u.isMarquee ? '0 0 10px rgba(251, 191, 36, 0.4)' : 'none'
+                                                    }}
+                                                    title="Toggle Marquee"
+                                                >
+                                                    M
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); toggleTag(u.id, 'isSuper', u.isSuper); }}
+                                                    style={{
+                                                        width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold', transition: 'all 0.2s',
+                                                        background: u.isSuper ? '#a855f7' : '#1a1a1a',
+                                                        color: u.isSuper ? '#fff' : '#555',
+                                                        border: u.isSuper ? 'none' : '1px solid #333',
+                                                        boxShadow: u.isSuper ? '0 0 10px rgba(168, 85, 247, 0.4)' : 'none'
+                                                    }}
+                                                    title="Toggle Super"
+                                                >
+                                                    S
+                                                </button>
+                                                <div style={{ width: '1px', height: '20px', background: '#333', margin: '0 5px' }}></div>
+                                            </>
+                                        )}
+
+                                        <button
+                                            onClick={() => deleteUser(u.id)}
+                                            style={{
+                                                background: '#1a1a1a', border: '1px solid #333', color: '#ef4444',
+                                                padding: '0 12px', height: '32px', borderRadius: '6px', cursor: 'pointer',
+                                                fontSize: '0.75rem', fontWeight: 'bold', letterSpacing: '0.5px',
+                                                transition: 'all 0.2s'
+                                            }}
+                                            onMouseEnter={(e) => { e.target.style.background = '#ef4444'; e.target.style.color = 'white'; e.target.style.border = '1px solid #ef4444'; }}
+                                            onMouseLeave={(e) => { e.target.style.background = '#1a1a1a'; e.target.style.color = '#ef4444'; e.target.style.border = '1px solid #333'; }}
+                                        >
+                                            DELETE
+                                        </button>
                                     </div>
                                 </td>
                             </tr>

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { db } from '../../firebase'; // Correct Import Path
+import { db } from '../../firebase';
 import { collection, getDocs } from 'firebase/firestore';
-import AdminLayout from '../../components/AdminLayout'; // Correct Import Path
-import SkeletonRow from '../../components/SkeletonRow'; // Correct Import Path
+import AdminLayout from '../../components/AdminLayout';
+import SkeletonRow from '../../components/SkeletonRow';
 
 export default function TeamSquads() {
     const [teams, setTeams] = useState([]);

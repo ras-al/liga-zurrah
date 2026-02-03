@@ -11,35 +11,37 @@ export default function AuctionScreen() {
 
     const [squadLoading, setSquadLoading] = useState(false);
 
+    const [allPlayers, setAllPlayers] = useState([]);
+
     useEffect(() => {
+        // Fetch all players for the Intro Grids
+        const fetchPlayers = async () => {
+            const snap = await getDocs(collection(db, 'registrations'));
+            setAllPlayers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        };
+        fetchPlayers();
+
         // Listen to Auction State
         const unsubAuction = onSnapshot(doc(db, 'auction', 'live'), async (docSnap) => {
             const auctionData = docSnap.data();
             setData(auctionData);
 
-            // ⚡ IF MODE IS 'REVEAL', FETCH THAT TEAM'S PLAYERS
             if (auctionData?.status === 'reveal' && auctionData?.viewTeamId) {
                 setSquadLoading(true);
-                setSquad([]); // Clear previous squad
+                setSquad([]);
 
                 try {
                     console.log("Fetching squad for Team ID:", auctionData.viewTeamId);
-
-                    // ⚡ OPTIMIZED QUERY (Requires Composite Index: teamId ASC + status ASC)
-                    // If this fails with "needs an index", click the link in the console to create it.
                     const q = query(
                         collection(db, 'registrations'),
                         where('teamId', '==', auctionData.viewTeamId),
                         where('status', '==', 'sold')
                     );
                     const pSnap = await getDocs(q);
-
                     const teamSquad = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-                    console.log("Players matching Team ID:", teamSquad.length);
-
                     setSquad(teamSquad);
                 } catch (error) {
-                    console.error("Error fetching squad (Check if Index exists!):", error);
+                    console.error("Error fetching squad:", error);
                 }
                 setSquadLoading(false);
             }
@@ -47,16 +49,65 @@ export default function AuctionScreen() {
 
         // Listen to Team Wallets
         const unsubTeams = onSnapshot(collection(db, 'teams'), (snap) => {
-            // Sort by money left (descending) as requested
             setTeams(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.wallet - a.wallet));
         });
 
         return () => { unsubAuction(); unsubTeams(); };
     }, []);
 
-    if (!data) return <div className="flex-center" style={{ height: '100vh' }}><h1>WAITING FOR AUCTION...</h1></div>;
+    if (!data) return <div className="flex-center" style={{ height: '100vh', color: 'white' }}><h1>WAITING FOR AUCTION...</h1></div>;
+    if (data.status === 'intro') {
+        const groupName = data.group || 'PLAYERS';
+        const subGroup = data.subGroup;
+        let introPlayers = allPlayers.filter(p => p.status !== 'sold' && p.role === 'Player');
 
-    // RENDER: SQUAD REVEAL MODE (The New Feature)
+        if (groupName === 'Marquee') {
+            introPlayers = introPlayers.filter(p => p.isMarquee);
+        } else if (groupName === 'Goalkeeper') {
+            introPlayers = introPlayers.filter(p => p.role === 'Player' && p.position && p.position.includes('Goalkeeper') && !p.isMarquee);
+        } else if (groupName === 'Super') {
+            introPlayers = introPlayers.filter(p => p.isSuper && !p.isMarquee && (!p.position || !p.position.includes('Goalkeeper')));
+        } else if (groupName === 'Other') {
+            introPlayers = introPlayers.filter(p => !p.isMarquee && !p.isSuper && (!p.position || !p.position.includes('Goalkeeper')));
+        }
+
+        if (subGroup) {
+            introPlayers = introPlayers.filter(p => p.position && p.position.includes(subGroup));
+        }
+        introPlayers.sort((a, b) => a.name.localeCompare(b.name));
+
+        return (
+            <div className="intro-container" style={{ background: '#000', minHeight: '100vh', padding: '40px', color: 'white' }}>
+                <motion.h1
+                    initial={{ y: -50, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    style={{ textAlign: 'center', fontSize: '4rem', marginBottom: '40px', textTransform: 'uppercase', letterSpacing: '5px', color: '#FEBF00', textShadow: '0 0 20px rgba(254, 191, 0, 0.5)' }}
+                >
+                    {groupName} {subGroup ? subGroup : ''} PLAYERS
+                </motion.h1>
+
+                <div className="intro-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
+                    {introPlayers.map((p, i) => (
+                        <motion.div
+                            key={p.id}
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: i * 0.12 }}
+                            style={{ background: '#222', borderRadius: '10px', overflow: 'hidden', border: '1px solid #444', textAlign: 'center' }}
+                        >
+                            <img src={p.photo} style={{ width: '100%', height: '200px', objectFit: 'cover' }} alt={p.name} />
+                            <div style={{ padding: '10px' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{p.name}</div>
+                                <div style={{ fontSize: '0.9rem', color: '#888' }}>{p.position}</div>
+                            </div>
+                        </motion.div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    // RENDER: SQUAD REVEAL MODE
     if (data.status === 'reveal') {
         return (
             <div className="reveal-container">

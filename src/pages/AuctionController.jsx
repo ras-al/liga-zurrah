@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, doc, setDoc, updateDoc, onSnapshot, writeBatch } from 'firebase/firestore';
 
-// ... (in AuctionController)
-
 const selectPlayer = async (player) => {
     if (currentAuction?.status === 'live') {
         if (!confirm("Auction in progress! Switch player?")) return;
@@ -14,7 +12,7 @@ const selectPlayer = async (player) => {
         currentBid: player.basePrice || 500,
         bidderTeam: 'None',
         status: 'live',
-        bidHistory: [] // Initialize history
+        bidHistory: []
     });
 };
 
@@ -23,8 +21,6 @@ const increaseBid = async (amount) => {
 
     const previousBid = Number(currentAuction.currentBid);
     const newBid = previousBid + amount;
-
-    // Push current bid to history before updating
     const newHistory = [...(currentAuction.bidHistory || []), previousBid];
 
     await updateDoc(doc(db, 'auction', 'live'), {
@@ -37,7 +33,7 @@ const undoBid = async () => {
     if (!currentAuction || !currentAuction.bidHistory || currentAuction.bidHistory.length === 0) return;
 
     const history = [...currentAuction.bidHistory];
-    const previousBid = history.pop(); // Get last bid
+    const previousBid = history.pop();
 
     await updateDoc(doc(db, 'auction', 'live'), {
         currentBid: previousBid,
@@ -103,8 +99,6 @@ const markSold = async () => {
 
     try {
         await batch.commit();
-        // --- ATOMIC BATCH WRITE END ---
-
         // 5. Update Local State Immediately (Optimistic UI)
         setPlayers(prev => prev.filter(p => p.id !== currentAuction.id));
         setTeams(prev => prev.map(t => t.id === winningTeam.id ? { ...t, wallet: newWallet } : t).sort((a, b) => b.wallet - a.wallet));
@@ -129,7 +123,11 @@ export default function AuctionController() {
 
     // New Features State
     const [searchTerm, setSearchTerm] = useState('');
-    const [customPrice, setCustomPrice] = useState('');
+
+
+    // State for Tabs
+    const [activeTab, setActiveTab] = useState('Marquee'); // Marquee, GK, Super, Other
+    const [activeSubTab, setActiveSubTab] = useState('All'); // All, Forward, Defender
 
     // 1. Listen to Real-time Auction Data
     useEffect(() => {
@@ -161,11 +159,26 @@ export default function AuctionController() {
             if (!confirm("Auction in progress! Switch player?")) return;
         }
 
+        // DYNAMIC BASE PRICE RULE (Enforce here as fail-safe)
+        let startPrice = 30;
+        if (player.isMarquee) startPrice = 100;
+        else if (player.isSuper) startPrice = 50;
+
         await setDoc(doc(db, 'auction', 'live'), {
             ...player,
-            currentBid: player.basePrice || 500,
+            currentBid: startPrice,
+            basePrice: startPrice,
             bidderTeam: 'None',
             status: 'live'
+        });
+    };
+
+    const launchIntro = async () => {
+        await setDoc(doc(db, 'auction', 'live'), {
+            status: 'intro',
+            group: activeTab, // Tell the screen which group to show
+            subGroup: activeSubTab !== 'All' ? activeSubTab : null, // Pass sub-filter if active
+            introTimestamp: Date.now()
         });
     };
 
@@ -190,19 +203,7 @@ export default function AuctionController() {
         });
     };
 
-    const setCustomBid = async () => {
-        if (!currentAuction || !customPrice) return;
-        const val = Number(customPrice);
-        if (isNaN(val) || val <= 0) return alert("Invalid amount");
 
-        const previousBid = Number(currentAuction.currentBid);
-
-        await updateDoc(doc(db, 'auction', 'live'), {
-            currentBid: val,
-            lastBid: previousBid
-        });
-        setCustomPrice('');
-    };
 
     const assignBidder = async (teamName) => {
         if (!currentAuction || currentAuction.status !== 'live') return;
@@ -269,45 +270,119 @@ export default function AuctionController() {
         }, 2000); // 2s delay
     };
 
+    // Helper to get increments based on current player
+    const getIncrements = () => {
+        if (!currentAuction) return [10, 50];
+        if (currentAuction.isMarquee) return [20, 50];
+        return [10, 50]; // Super and Others share same increments
+    };
+    const [inc1, inc2] = getIncrements(); // Usage in render below
+
+    // FILTER LOGIC
+    const getFilteredPlayers = () => {
+        // FIX: Globally exclude Managers
+        let filtered = players.filter(p => p.status !== 'sold' && p.role === 'Player');
+
+        // Hierarchy Filtering
+        if (activeTab === 'Marquee') {
+            filtered = filtered.filter(p => p.isMarquee);
+        } else if (activeTab === 'Goalkeeper') {
+            // FIX: Goalkeepers are Players with position 'Goalkeeper'
+            filtered = filtered.filter(p => p.role === 'Player' && p.position && p.position.includes('Goalkeeper') && !p.isMarquee);
+        } else if (activeTab === 'Super') {
+            // FIX: Exclude Goalkeepers correctly here too
+            filtered = filtered.filter(p => p.isSuper && !p.isMarquee && (!p.position || !p.position.includes('Goalkeeper')));
+        } else if (activeTab === 'Other') {
+            // FIX: Exclude Goalkeepers correctly here too
+            filtered = filtered.filter(p => !p.isMarquee && !p.isSuper && (!p.position || !p.position.includes('Goalkeeper')));
+        }
+
+        // Sub-Tab Filtering (Position)
+        if (activeSubTab !== 'All') {
+            filtered = filtered.filter(p => p.position && p.position.includes(activeSubTab));
+        }
+
+        // Search
+        if (searchTerm) {
+            filtered = filtered.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+        }
+
+        return filtered;
+    };
+
+    const displayedPlayers = getFilteredPlayers();
+
     return (
         <div className="auction-container">
             {/* LEFT: Player Pool */}
             <div className="player-pool-panel">
                 <div className="panel-header">
-                    PLAYER POOL ({players.filter(p => p.status !== 'sold').length})
+                    PLAYER POOL
                 </div>
-                {/* Search Input */}
-                <input
-                    type="text"
-                    placeholder="Search player..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{
-                        width: '90%', margin: '10px auto', display: 'block',
-                        padding: '8px', background: '#333', border: '1px solid #555',
-                        color: 'white', borderRadius: '4px'
-                    }}
-                />
 
-                <div className="player-list">
-                    {players
-                        .filter(p => p.status !== 'sold')
-                        .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
-                        .map(p => (
-                            <div key={p.id}
-                                className={`pool-item ${currentAuction?.id === p.id ? 'active' : ''}`}
-                                onClick={() => selectPlayer(p)}
-                                style={{ opacity: p.status === 'unsold' ? 0.6 : 1, border: p.status === 'unsold' ? '1px dashed #f87171' : '' }}
+                {/* TABS GRID */}
+                <div className="tabs-grid">
+                    {['Marquee', 'Goalkeeper', 'Super', 'Other'].map(tab => (
+                        <button
+                            key={tab}
+                            onClick={() => { setActiveTab(tab); setActiveSubTab('All'); }}
+                            className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
+                        >
+                            {tab}
+                        </button>
+                    ))}
+                </div>
+
+                {/* SUB TABS */}
+                {activeTab !== 'Goalkeeper' && (
+                    <div className="sub-tabs-row">
+                        {['All', 'Forward', 'Defender'].map(stab => (
+                            <button
+                                key={stab}
+                                onClick={() => setActiveSubTab(stab)}
+                                className={`sub-tab-btn ${activeSubTab === stab ? 'active' : ''}`}
                             >
-                                <img src={p.photo} className="pool-avatar" alt="p" />
-                                <div>
-                                    <div style={{ fontWeight: 'bold' }}>{p.name}</div>
-                                    <div style={{ fontSize: '0.8rem', color: '#888' }}>
-                                        {p.position} {p.status === 'unsold' && <span style={{ color: '#f87171', fontWeight: 'bold' }}>(UNSOLD)</span>}
-                                    </div>
+                                {stab}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {/* LAUNCH INTRO BUTTON */}
+                <button
+                    onClick={launchIntro}
+                    className="launch-intro-btn"
+                >
+                    LAUNCH {activeTab.toUpperCase()} INTRO
+                </button>
+
+                {/* Search Input */}
+                <div className="pool-search-box">
+                    <input
+                        type="text"
+                        placeholder="Search player..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pool-search-input"
+                    />
+                </div>
+
+                <div className="player-list no-scrollbar">
+                    {displayedPlayers.map(p => (
+                        <div key={p.id}
+                            className={`pool-item ${currentAuction?.id === p.id ? 'active' : ''}`}
+                            onClick={() => selectPlayer(p)}
+                            style={{ opacity: p.status === 'unsold' ? 0.6 : 1, border: p.status === 'unsold' ? '1px dashed #f87171' : '' }}
+                        >
+                            <img src={p.photo} className="pool-avatar" alt="p" />
+                            <div>
+                                <div style={{ fontWeight: 'bold' }}>{p.name}</div>
+                                <div style={{ fontSize: '0.8rem', color: '#888' }}>
+                                    {p.position} {p.status === 'unsold' && <span style={{ color: '#f87171', fontWeight: 'bold' }}>(UNSOLD)</span>}
                                 </div>
                             </div>
-                        ))}
+                        </div>
+                    ))}
                 </div>
             </div>
 
@@ -326,33 +401,41 @@ export default function AuctionController() {
                         <div className="player-role">{currentAuction.position} • {currentAuction.class}</div>
 
                         <div className="bid-display">
-                            <span className="current-price">₹{currentAuction.currentBid}</span>
+                            <div style={{ marginBottom: '10px', color: '#aaa', fontSize: '0.9rem' }}>
+                                CURRENT BID: <span style={{ color: '#fff', fontSize: '1.4rem' }}>₹{currentAuction.currentBid}</span>
+                            </div>
                             <span className="bidder-name">
                                 {currentAuction.bidderTeam === 'None' ? 'NO BIDDER' : currentAuction.bidderTeam}
                             </span>
                         </div>
 
-                        {currentAuction.status === 'live' && (
-                            <div className="controls-grid">
-                                <button className="control-btn" onClick={() => increaseBid(100)}>+100</button>
-                                <button className="control-btn" onClick={() => increaseBid(200)}>+200</button>
-                                <button className="control-btn" onClick={() => increaseBid(500)}>+500</button>
 
-                                {/* Custom Bid Input */}
-                                <div style={{ display: 'flex', gap: '5px', gridColumn: 'span 3' }}>
-                                    <input
-                                        type="number"
-                                        placeholder="Custom Amount"
-                                        value={customPrice}
-                                        onChange={(e) => setCustomPrice(e.target.value)}
-                                        style={{ flex: 1, padding: '5px', background: '#222', border: '1px solid #444', color: 'white' }}
-                                    />
-                                    <button className="control-btn" style={{ fontSize: '0.8rem', width: 'auto' }} onClick={setCustomBid}>SET</button>
+
+                        {/* Custom Bid Input */}
+                        {currentAuction.status === 'live' && (
+                            <div className="controls-container">
+                                {/* ROW 1: BID INCREMENTS */}
+                                <div className="bid-buttons-row">
+                                    <button className="control-btn btn-bid" onClick={() => increaseBid(inc1)}>
+                                        +{inc1}
+                                    </button>
+                                    <button className="control-btn btn-bid" onClick={() => increaseBid(inc2)}>
+                                        +{inc2}
+                                    </button>
                                 </div>
 
-                                <button className="control-btn" style={{ borderColor: '#ef4444', color: '#ef4444' }} onClick={undoBid}>↩ UNDO</button>
-                                <button className="control-btn" style={{ borderColor: '#555', color: '#888' }} onClick={markUnsold}>UNSOLD</button>
-                                <button className="control-btn sold" onClick={markSold}>✓ SOLD TO {currentAuction.bidderTeam}</button>
+                                {/* ROW 2: ACTIONS */}
+                                <div className="action-buttons-row">
+                                    <button className="control-btn btn-undo" onClick={undoBid}>
+                                        <span style={{ fontSize: '1.5rem', marginRight: '5px' }}>↩</span> UNDO
+                                    </button>
+                                    <button className="control-btn btn-unsold" onClick={markUnsold}>
+                                        UNSOLD
+                                    </button>
+                                    <button className="control-btn btn-sold" onClick={markSold}>
+                                        ✓ SOLD TO {currentAuction.bidderTeam === 'None' ? '...' : currentAuction.bidderTeam}
+                                    </button>
+                                </div>
                             </div>
                         )}
 
@@ -374,7 +457,7 @@ export default function AuctionController() {
             {/* RIGHT: Teams */}
             <div className="teams-panel">
                 <div className="panel-header" style={{ borderBottomColor: 'var(--neon-gold)' }}>TEAMS & WALLETS</div>
-                <div className="player-list">
+                <div className="player-list no-scrollbar">
                     {teams.map(t => (
                         <div key={t.id}
                             className={`team-card ${currentAuction?.bidderTeam === t.name ? 'winning' : ''}`}
@@ -424,6 +507,6 @@ export default function AuctionController() {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
