@@ -512,4 +512,220 @@
     font-family: 'Bebas Neue', sans-serif;
     font-size: 1.3rem;
     margin: 0;
+}/* === CINEMATIC REVEAL & INTRO STYLES === */
+
+.reveal-bg-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(251, 191, 36, 0.15) 0%, transparent 60%);
+    z-index: 0;
+    pointer-events: none;
+}
+
+.reveal-header-box {
+    position: absolute;
+    text-align: center;
+    z-index: 10;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.reveal-team-name {
+    font-family: 'Anton', sans-serif;
+    font-size: 5rem;
+    color: white;
+    text-transform: uppercase;
+    text-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+    margin: 0;
+}
+
+.reveal-logo {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 4px solid gold;
+    object-fit: cover;
+    margin-bottom: 20px;
+    transition: all 0.8s ease-in-out;
+}
+
+/* When in 'grid' phase, make logo smaller */
+.reveal-header-box[style*="top: 5%"] .reveal-logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 5px;
+}
+
+.squad-grid-container {
+    margin-top: 150px;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    display: flex;
+    justify-content: center;
+    perspective: 1000px;
+    z-index: 5;
+}
+
+.squad-grid-3d {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    width: 90%;
+    max-width: 1400px;
+    transform-style: preserve-3d;
+    padding-bottom: 100px;
+}
+
+.squad-card-3d {
+    width: 200px;
+    height: 280px;
+    position: relative;
+    transform-style: preserve-3d;
+}
+
+.card-inner {
+    width: 100%;
+    height: 100%;
+    background: rgba(20, 20, 20, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-inner img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.card-footer {
+    padding: 10px;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.5);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.p-name {
+    color: white;
+    font-family: 'Anton', sans-serif;
+    font-size: 1.2rem;
+}
+
+.p-price {
+    color: var(--neon-gold);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+}
+
+.intro-card-glass {
+    width: 180px;
+    height: 240px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease;
+}
+
+.intro-card-glass:hover {
+    transform: translateY(-5px);
+    border-color: var(--neon-gold);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.intro-card-glass img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.intro-info {
+    padding: 10px;
+    text-align: center;
+    width: 100%;
+}
+
+.intro-info .name {
+    color: white;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.intro-info .pos {
+    color: #aaa;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+/* --- NEW TRANSITION EFFECTS --- */
+
+/* 1. The Rotating God-Rays Background */
+.player-spotlight-bg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80vh;
+    height: 80vh;
+    background: conic-gradient(from 0deg, transparent 0%, rgba(255, 255, 255, 0.05) 15%, transparent 30%);
+    border-radius: 50%;
+    z-index: -1;
+    animation: rotateRays 10s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes rotateRays {
+    from {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+/* 2. The Impact Shockwave */
+.impact-shockwave {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.6);
+    /* Gold Glow */
+    z-index: 0;
+}
+
+/* Update Player Image to pop more */
+.auction-player-img {
+    z-index: 10;
+    position: relative;
+    filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.8));
 }
