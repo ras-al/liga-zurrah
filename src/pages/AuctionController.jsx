@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, doc, setDoc, updateDoc, onSnapshot, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, updateDoc, onSnapshot, writeBatch, arrayUnion } from 'firebase/firestore';
 
 const selectPlayer = async (player) => {
     if (currentAuction?.status === 'live') {
@@ -99,11 +99,8 @@ const markSold = async () => {
 
     try {
         await batch.commit();
-        // 5. Update Local State Immediately (Optimistic UI)
         setPlayers(prev => prev.filter(p => p.id !== currentAuction.id));
         setTeams(prev => prev.map(t => t.id === winningTeam.id ? { ...t, wallet: newWallet } : t).sort((a, b) => b.wallet - a.wallet));
-
-        // 6. Reset Screen after delay
         setTimeout(async () => {
             await setDoc(doc(db, 'auction', 'live'), { status: 'waiting', currentPlayer: null });
         }, 3000);
@@ -120,16 +117,10 @@ export default function AuctionController() {
     const [players, setPlayers] = useState([]);
     const [teams, setTeams] = useState([]);
     const [currentAuction, setCurrentAuction] = useState(null);
-
-    // New Features State
     const [searchTerm, setSearchTerm] = useState('');
+    const [activeTab, setActiveTab] = useState('Marquee');
+    const [activeSubTab, setActiveSubTab] = useState('All');
 
-
-    // State for Tabs
-    const [activeTab, setActiveTab] = useState('Marquee'); // Marquee, GK, Super, Other
-    const [activeSubTab, setActiveSubTab] = useState('All'); // All, Forward, Defender
-
-    // 1. Listen to Real-time Auction Data
     useEffect(() => {
         const unsub = onSnapshot(doc(db, 'auction', 'live'), (doc) => {
             setCurrentAuction(doc.data());
@@ -176,10 +167,13 @@ export default function AuctionController() {
     const launchIntro = async () => {
         await setDoc(doc(db, 'auction', 'live'), {
             status: 'intro',
-            group: activeTab, // Tell the screen which group to show
-            subGroup: activeSubTab !== 'All' ? activeSubTab : null, // Pass sub-filter if active
+            group: activeTab,
+            subGroup: activeSubTab !== 'All' ? activeSubTab : null,
             introTimestamp: Date.now()
         });
+        await setDoc(doc(db, 'auction', 'settings'), {
+            unlocked_groups: arrayUnion(activeTab)
+        }, { merge: true });
     };
 
     const increaseBid = async (amount) => {
@@ -276,33 +270,25 @@ export default function AuctionController() {
         if (currentAuction.isMarquee) return [20, 50];
         return [10, 50]; // Super and Others share same increments
     };
-    const [inc1, inc2] = getIncrements(); // Usage in render below
+    const [inc1, inc2] = getIncrements();
 
-    // FILTER LOGIC
     const getFilteredPlayers = () => {
-        // FIX: Globally exclude Managers
         let filtered = players.filter(p => p.status !== 'sold' && p.role === 'Player');
 
-        // Hierarchy Filtering
         if (activeTab === 'Marquee') {
             filtered = filtered.filter(p => p.isMarquee);
         } else if (activeTab === 'Goalkeeper') {
-            // FIX: Goalkeepers are Players with position 'Goalkeeper'
             filtered = filtered.filter(p => p.role === 'Player' && p.position && p.position.includes('Goalkeeper') && !p.isMarquee);
         } else if (activeTab === 'Super') {
-            // FIX: Exclude Goalkeepers correctly here too
             filtered = filtered.filter(p => p.isSuper && !p.isMarquee && (!p.position || !p.position.includes('Goalkeeper')));
         } else if (activeTab === 'Other') {
-            // FIX: Exclude Goalkeepers correctly here too
             filtered = filtered.filter(p => !p.isMarquee && !p.isSuper && (!p.position || !p.position.includes('Goalkeeper')));
         }
 
-        // Sub-Tab Filtering (Position)
         if (activeSubTab !== 'All') {
             filtered = filtered.filter(p => p.position && p.position.includes(activeSubTab));
         }
 
-        // Search
         if (searchTerm) {
             filtered = filtered.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
         }
@@ -469,8 +455,6 @@ export default function AuctionController() {
                     ))}
                 </div>
 
-                {/* SQUAD REVEAL CONTROLS */}
-                {/* SQUAD REVEAL CONTROLS */}
                 <div style={{ marginTop: '20px', borderTop: '2px solid #333', paddingTop: '15px' }}>
                     <h3 style={{ fontSize: '1rem', color: '#888', marginBottom: '10px', letterSpacing: '2px' }}>SQUAD REVEAL</h3>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -495,7 +479,7 @@ export default function AuctionController() {
                                         status: 'reveal',
                                         viewTeamId: team.id,
                                         viewTeamName: team.name,
-                                        viewTeamLogo: team.logo, // Pass Logo
+                                        viewTeamLogo: team.logo,
                                         viewTeamWallet: team.wallet
                                     });
                                 }}

@@ -11,6 +11,8 @@ import AuctionScreen from './pages/AuctionScreen';
 import TeamRegistration from './pages/admin/TeamRegistration';
 import TeamSquads from './pages/admin/TeamSquads';
 import Login from './pages/Login';
+import TeamLogin from './pages/manager/TeamLogin';
+import ManagerDashboard from './pages/manager/ManagerDashboard';
 
 const AdminRoute = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -39,6 +41,8 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/screen" element={<AuctionScreen />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/team-login" element={<TeamLogin />} />
+          <Route path="/war-room" element={<ManagerDashboard />} />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

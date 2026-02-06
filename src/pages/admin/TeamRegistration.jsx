@@ -12,6 +12,7 @@ export default function TeamRegistration() {
     const [teamLogo, setTeamLogo] = useState('');
     const [selectedManagers, setSelectedManagers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [passcode, setPasscode] = useState('');
 
     const fetchData = async () => {
         const tSnap = await getDocs(collection(db, 'teams'));
@@ -49,6 +50,10 @@ export default function TeamRegistration() {
             return toast.error("Please enter a team name!");
         }
 
+        if (!passcode.trim()) {
+            return toast.error("Please enter a team passcode!");
+        }
+
         if (selectedManagers.length < 2) {
             return toast.error("A team must have at least 2 Managers!");
         }
@@ -63,6 +68,7 @@ export default function TeamRegistration() {
         try {
             await addDoc(collection(db, 'teams'), {
                 name: teamName,
+                passcode: passcode,
                 logo: teamLogo || 'https://placehold.co/100?text=TEAM',
                 wallet: 2000,
                 managers: assignedManagers
@@ -70,6 +76,7 @@ export default function TeamRegistration() {
 
             toast.success("Team Created Successfully!");
             setTeamName('');
+            setPasscode('');
             setTeamLogo('');
             setSelectedManagers([]);
             fetchData();
@@ -111,6 +118,18 @@ export default function TeamRegistration() {
                         />
                     </div>
 
+                    {/* Team Passcode Input */}
+                    <div style={{ marginBottom: '20px' }}>
+                        <label style={{ display: 'block', marginBottom: '10px', color: '#888' }}>TEAM PASSCODE</label>
+                        <input
+                            type="text"
+                            placeholder="Enter Secret Passcode"
+                            value={passcode}
+                            onChange={(e) => setPasscode(e.target.value)}
+                            style={{ width: '100%', background: '#000', border: '1px solid #444', color: 'white', padding: '15px', borderRadius: '4px' }}
+                        />
+                    </div>
+
                     {/* Team Logo Upload */}
                     <div style={{ marginBottom: '20px' }}>
                         <label style={{ display: 'block', marginBottom: '10px', color: '#888' }}>TEAM LOGO (Upload)</label>
@@ -148,7 +167,6 @@ export default function TeamRegistration() {
                                             const ctx = canvas.getContext('2d');
                                             ctx.drawImage(img, 0, 0, width, height);
 
-                                            // Convert to Base64 (JPEG 70% quality)
                                             const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
                                             setTeamLogo(dataUrl);
                                         };
@@ -202,6 +220,7 @@ export default function TeamRegistration() {
                     <tr>
                         <th>TEAM</th>
                         <th>MANAGERS</th>
+                        <th>PASSCODE</th>
                         <th>WALLET</th>
                         <th>ACTION</th>
                     </tr>
@@ -223,6 +242,7 @@ export default function TeamRegistration() {
                                     )) : <span style={{ color: '#444' }}>No Managers</span>}
                                 </div>
                             </td>
+                            <td style={{ color: '#aaa', fontFamily: 'monospace' }}>{team.passcode || '---'}</td>
                             <td style={{ color: 'var(--neon-gold)' }}>₹ {team.wallet}</td>
                             <td>
                                 <button
