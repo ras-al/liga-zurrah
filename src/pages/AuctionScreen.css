@@ -566,10 +566,10 @@
 }
 
 .squad-grid-container {
-    margin-top: 300px;
-    /* Increased further to be safe */
+    margin-top: 150px;
+    /* Reduced margin-top (was 300px) */
     width: 100%;
-    height: calc(100vh - 300px);
+    height: calc(100vh - 150px);
     overflow-y: auto;
     display: flex;
     justify-content: center;
@@ -1006,4 +1006,190 @@
     font-size: 1.2rem;
     color: white;
     text-transform: uppercase;
+}
+
+/* --- AUCTION SCREEN SPONSORS --- */
+/* --- AUCTION SCREEN SPONSORS (SIDE) --- */
+.auction-sponsor-logo {
+    position: absolute;
+    width: 140px;
+    height: 140px;
+    z-index: 1000;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+    transition: transform 0.3s ease;
+    top: 50px;
+    /* Fixed distance from top */
+    object-fit: contain;
+}
+
+.auction-sponsor-logo:hover {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.5));
+}
+
+.sponsor-side-left {
+    left: 40px;
+    /* Far left edge */
+}
+
+.sponsor-side-right {
+    right: 40px;
+    /* Far right edge */
+}
+
+/* --- IDLE/WAITING LARGE SPONSORS --- */
+.auction-screen-idle {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at center, #111, #000);
+    position: relative;
+    overflow: hidden;
+}
+
+.auction-screen-idle::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    opacity: 0.5;
+    z-index: 1;
+}
+
+.auction-idle-sponsors {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 100px;
+    z-index: 2;
+    animation: fadeIn 1.5s ease;
+}
+
+.sponsor-large {
+    width: 350px;
+    height: 350px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 50px rgba(255, 255, 255, 0.1));
+    animation: float 6s ease-in-out infinite;
+    z-index: 2;
+}
+
+.idle-center-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    z-index: 5;
+}
+
+.idle-main-logo {
+    width: 250px;
+    height: 250px;
+    object-fit: contain;
+    border-radius: 50%;
+    border: 4px solid var(--neon-gold);
+    box-shadow: 0 0 40px rgba(251, 191, 36, 0.4);
+    margin-bottom: 20px;
+}
+
+.idle-center-content .glitch-text {
+    font-family: 'Anton', sans-serif;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+    font-size: 5rem;
+    color: white;
+    line-height: 1;
+}
+
+.official-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    color: var(--neon-gold);
+    letter-spacing: 10px;
+    opacity: 0.8;
+}
+
+/* --- ANIMATIONS: GLITCH & PULSE --- */
+.glitch-text {
+    position: relative;
+    animation: glitch 1s linear infinite;
+}
+
+.glitch-text::before,
+.glitch-text::after {
+    content: attr(data-text);
+    position: absolute;
+    left: 0;
+}
+
+.glitch-text::before {
+    animation: glitchTop 1s linear infinite;
+    clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
+    -webkit-clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
+}
+
+.glitch-text::after {
+    animation: glitchBottom 1.5s linear infinite;
+    clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%);
+    -webkit-clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%);
+}
+
+@keyframes glitch {
+
+    2%,
+    64% {
+        transform: translate(2px, 0) skew(0deg);
+    }
+
+    4%,
+    60% {
+        transform: translate(-2px, 0) skew(0deg);
+    }
+
+    62% {
+        transform: translate(0, 0) skew(5deg);
+    }
+}
+
+@keyframes glitchTop {
+
+    2%,
+    64% {
+        transform: translate(2px, -2px);
+    }
+
+    4%,
+    60% {
+        transform: translate(-2px, 2px);
+    }
+
+    62% {
+        transform: translate(13px, -1px) skew(-13deg);
+    }
+}
+
+@keyframes glitchBottom {
+
+    2%,
+    64% {
+        transform: translate(-2px, 0);
+    }
+
+    4%,
+    60% {
+        transform: translate(-2px, 0);
+    }
+
+    62% {
+        transform: translate(-22px, 5px) skew(21deg);
+    }
 }

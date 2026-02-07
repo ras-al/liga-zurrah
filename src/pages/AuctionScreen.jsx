@@ -21,7 +21,7 @@ export default function AuctionScreen() {
     const [paradeIndex, setParadeIndex] = useState(-1); // -1: Init, 0..N: Team Index, N+1: Final Grid
     const [paradePhase, setParadePhase] = useState('logo'); // 'logo' (Manager+Logo) -> 'grid' (All Teams)
 
-    // --- HELPER: FIREWORKS ---
+    // --- HELPER: FIREWORKS & POPPERS ---
     const triggerFireworks = () => {
         const duration = 3 * 1000;
         const animationEnd = Date.now() + duration;
@@ -36,6 +36,27 @@ export default function AuctionScreen() {
             confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
         }, 250);
     };
+
+    const triggerPoppers = () => {
+        const count = 200;
+        const defaults = {
+            origin: { y: 0.7 },
+            zIndex: 9999
+        };
+
+        function fire(particleRatio, opts) {
+            confetti(Object.assign({}, defaults, opts, {
+                particleCount: Math.floor(count * particleRatio)
+            }));
+        }
+
+        fire(0.25, { spread: 26, startVelocity: 55 });
+        fire(0.2, { spread: 60 });
+        fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+        fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+        fire(0.1, { spread: 120, startVelocity: 45 });
+    };
+
 
     // --- HELPER: FETCH PLAYERS ---
     useEffect(() => {
@@ -96,6 +117,7 @@ export default function AuctionScreen() {
 
                         setTimeout(() => {
                             setRevealPhase('grid'); // Fly Up
+                            triggerPoppers(); // 💥 SQUAD REVEAL POPPER
                         }, 3000); // 3 seconds pulsing logo
                     }
                 }
@@ -129,18 +151,41 @@ export default function AuctionScreen() {
     useEffect(() => {
         if (data?.status === 'parade' && teams.length > 0) {
             if (paradeIndex >= 0 && paradeIndex < teams.length) {
-                // Determine duration for each team (Redcued to 3s)
+                // 🎉 Trigger Fireworks for every team reveal
+                triggerFireworks();
+
+                // 💥 POPPER EFFECT (Delay to match logo)
+                setTimeout(() => triggerPoppers(), 1000);
+
+                // Determine duration for each team (Reduced to 3s)
                 const timer = setTimeout(() => {
                     setParadeIndex(prev => prev + 1);
                 }, 5000);
                 return () => clearTimeout(timer);
             } else if (paradeIndex === teams.length) {
                 // Parade finish -> Show All Grid
+                triggerFireworks();
+                triggerPoppers();
             }
         }
     }, [paradeIndex, data?.status, teams.length]);
 
-    if (!data) return <div className="flex-center" style={{ height: '100vh', color: 'white' }}><h1>WAITING...</h1></div>;
+    if (!data) return (
+        <div className="auction-screen-idle">
+            <div className="auction-idle-sponsors">
+                <img src="/sponser1.png" className="sponsor-large" alt="Sponsor 1" />
+
+                <div className="idle-center-content">
+                    <img src="/logo_circle.png" className="idle-main-logo" alt="Liga Logo" />
+                    <div className="glitch-text" data-text="LIGA ZURRHA">LIGA ZURRHA</div>
+                    <div className="official-text">OFFICIAL SPONSORS</div>
+                </div>
+
+                <img src="/sponser2.png" className="sponsor-large" alt="Sponsor 2" />
+            </div>
+            <h2 className="pulse-text" style={{ color: 'var(--neon-gold)', marginTop: 40, fontFamily: 'Bebas Neue', letterSpacing: 8, fontSize: '1.5rem', zIndex: 2 }}>WAITING TO START...</h2>
+        </div>
+    );
 
     // --- ANIMATION VARIANTS (Shared) ---
     const titleVariants = {
@@ -332,6 +377,7 @@ export default function AuctionScreen() {
     return (
         <div className="auction-layout">
             <div className="broadcast-overlay"></div>
+            {/* LIVE BADGE */}
             <div className="live-badge"><span className="live-dot"></span> LIVE AUCTION</div>
 
             {/* LEFT */}
@@ -361,6 +407,21 @@ export default function AuctionScreen() {
                     }}
                     transition={{ duration: 2.5, ease: "easeOut" }}
                 />
+
+                {/* --- SPONSOR LOGOS (Left/Right of Player) --- */}
+                {data.photo ? (
+                    <>
+                        <img src="/sponser1.png" className="auction-sponsor-logo sponsor-side-left" alt="Sponsor 1" />
+                        <img src="/sponser2.png" className="auction-sponsor-logo sponsor-side-right" alt="Sponsor 2" />
+                    </>
+                ) : (
+                    /* --- IDLE/WAITING STATE: LARGE CENTER LOGOS --- */
+                    <div className="auction-idle-sponsors">
+                        <img src="/sponser1.png" className="sponsor-large" alt="Sponsor 1" />
+                        <div className="idle-text">OFFICIAL SPONSORS</div>
+                        <img src="/sponser2.png" className="sponsor-large" alt="Sponsor 2" />
+                    </div>
+                )}
 
                 {/* 📸 3. PLAYER PHOTO (Zoom & Blur In) */}
                 {data.photo && (

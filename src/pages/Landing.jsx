@@ -155,12 +155,53 @@ const Stats = () => {
     );
 };
 
+const Sponsors = () => (
+    <div className="landing-section sponsors-section">
+        <div className="container" style={{ textAlign: 'center' }}>
+            <motion.h2
+                className="sponsors-title"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8 }}
+            >
+                OUR SPONSORS
+            </motion.h2>
+
+            <div className="sponsors-grid">
+                <motion.div
+                    className="sponsor-card"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                    whileHover={{ scale: 1.05 }}
+                >
+                    <img src="/sponser1.png" alt="Sponsor 1" />
+                </motion.div>
+
+                <motion.div
+                    className="sponsor-card"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: 0.4 }}
+                    whileHover={{ scale: 1.05 }}
+                >
+                    <img src="/sponser2.png" alt="Sponsor 2" />
+                </motion.div>
+            </div>
+        </div>
+    </div>
+);
+
 // Final Assembly
 export default function Landing() {
     return (
         <div className="landing-page">
             <Hero />
             <About />
+            <Sponsors />
             <Instructions />
             <Stats />
 
