@@ -17,6 +17,10 @@ export default function AuctionScreen() {
     // Store Intro Players locally to prevent flicker
     const [introPlayers, setIntroPlayers] = useState([]);
 
+    // PARADE STATE
+    const [paradeIndex, setParadeIndex] = useState(-1); // -1: Init, 0..N: Team Index, N+1: Final Grid
+    const [paradePhase, setParadePhase] = useState('logo'); // 'logo' (Manager+Logo) -> 'grid' (All Teams)
+
     // --- HELPER: FIREWORKS ---
     const triggerFireworks = () => {
         const duration = 3 * 1000;
@@ -91,10 +95,23 @@ export default function AuctionScreen() {
                         setSquadLoading(false);
 
                         setTimeout(() => {
-                            setRevealPhase('grid');
-                            triggerFireworks();
-                        }, 2500);
+                            setRevealPhase('grid'); // Fly Up
+                        }, 3000); // 3 seconds pulsing logo
                     }
+                }
+            }
+
+            // 🎬 LOGIC 3: TEAM PARADE
+            if (auctionData?.status === 'parade') {
+                if (data?.status !== 'parade' || data?.startTime !== auctionData.startTime) {
+                    // Start Parade Sequence
+                    setParadeIndex(-1);
+                    setParadePhase('logo');
+
+                    // Allow teams to load if not already
+                    setTimeout(() => {
+                        setParadeIndex(0); // Start 1st Team
+                    }, 500);
                 }
             }
 
@@ -108,12 +125,32 @@ export default function AuctionScreen() {
         return () => { unsubAuction(); unsubTeams(); };
     }, [allPlayers.length]); // Re-run logic if player list loads late
 
+    // TEAM PARADE SEQUENCER
+    useEffect(() => {
+        if (data?.status === 'parade' && teams.length > 0) {
+            if (paradeIndex >= 0 && paradeIndex < teams.length) {
+                // Determine duration for each team (Redcued to 3s)
+                const timer = setTimeout(() => {
+                    setParadeIndex(prev => prev + 1);
+                }, 5000);
+                return () => clearTimeout(timer);
+            } else if (paradeIndex === teams.length) {
+                // Parade finish -> Show All Grid
+            }
+        }
+    }, [paradeIndex, data?.status, teams.length]);
+
     if (!data) return <div className="flex-center" style={{ height: '100vh', color: 'white' }}><h1>WAITING...</h1></div>;
 
     // --- ANIMATION VARIANTS (Shared) ---
     const titleVariants = {
         entry: { top: '50%', left: '50%', x: '-50%', y: '-50%', scale: 3, opacity: 1, position: 'absolute' },
         grid: { top: '5%', left: '50%', x: '-50%', y: '0%', scale: 1, opacity: 1, position: 'absolute' }
+    };
+
+    const logoPulseVariants = {
+        entry: { scale: [1, 1.2, 1], opacity: 1, transition: { repeat: Infinity, duration: 1.5 } },
+        grid: { scale: 0.5, y: -200, opacity: 1, transition: { duration: 0.8 } }
     };
 
     // 1. 🌟 GROUP INTRO RENDER
@@ -166,14 +203,16 @@ export default function AuctionScreen() {
         return (
             <div className="reveal-container">
                 <div className="reveal-bg-glow"></div>
+
+                {/* LOGO & TITLE */}
                 <motion.div
-                    initial="entry"
-                    animate={revealPhase}
-                    variants={titleVariants}
-                    transition={{ duration: 0.8, ease: "easeInOut" }}
-                    className="reveal-header-box"
+                    initial={{ top: '50%', left: '50%', x: '-50%', y: '-50%', scale: 1, opacity: 1 }}
+                    animate={revealPhase === 'grid' ? { top: '5%', y: '0%', scale: 0.6 } : { scale: [1, 1.1, 1] }}
+                    transition={revealPhase === 'grid' ? { duration: 0.8, ease: "easeInOut" } : { repeat: Infinity, duration: 2 }}
+                    className={`reveal-header-box ${revealPhase === 'grid' ? 'phase-grid' : ''}`}
+                    style={{ position: 'absolute' }}
                 >
-                    {data.viewTeamLogo && <img src={data.viewTeamLogo} className="reveal-logo" />}
+                    {data.viewTeamLogo && <img src={data.viewTeamLogo} className={`reveal-logo ${revealPhase === 'entry' ? 'pulse-massive' : ''}`} style={{ width: 250, height: 250, border: '6px solid gold', marginBottom: 20 }} />}
                     <h1 className="reveal-team-name">{data.viewTeamName}</h1>
                 </motion.div>
 
@@ -195,6 +234,91 @@ export default function AuctionScreen() {
                                             <div className="p-price">₹{player.soldPrice}</div>
                                         </div>
                                     </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // 3. 🎺 TEAM PARADE RENDER
+    if (data.status === 'parade') {
+        const currentTeam = teams[paradeIndex];
+        const isFinished = paradeIndex >= teams.length;
+
+        // Find Team Managers (Filter instead of find)
+        const managers = allPlayers.filter(p => p.role === 'Manager' && p.teamId === currentTeam?.id);
+
+        return (
+            <div className="reveal-container" style={{ justifyContent: 'center', paddingTop: '50px' }}>
+                <div className="reveal-bg-glow"></div>
+
+                {!isFinished && currentTeam && (
+                    <motion.div
+                        key={currentTeam.id}
+                        initial={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
+                        animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                        exit={{ opacity: 0, scale: 1.2, filter: 'blur(10px)' }}
+                        transition={{ duration: 0.8 }}
+                        className="parade-center-stage"
+                        style={{ marginTop: '50px' }} // Added to clear top
+                    >
+                        {/* 1. LOGO REVEAL */}
+                        <motion.img
+                            src={currentTeam.logo}
+                            className="parade-logo"
+                            initial={{ scale: 1.5, y: 150 }} // Start Lower
+                            animate={{ scale: 1, y: 0 }}   // Move to Normal
+                            transition={{ delay: 1.0, duration: 1.5, ease: "easeOut" }} // Slower
+                        />
+
+                        <motion.div
+                            initial={{ y: 50 }}
+                            animate={{ y: 0 }}
+                            transition={{ delay: 1.5, duration: 1, ease: "easeInOut" }}
+                        >
+                            <h1 className="parade-team-name">{currentTeam.name}</h1>
+                        </motion.div>
+
+                        {/* 2. MANAGERS REVEAL BELOW */}
+                        {managers.length > 0 && (
+                            <div className="parade-managers-row" style={{ marginTop: '20px' }}>
+                                {managers.map((mgr, i) => (
+                                    <motion.div
+                                        key={mgr.id}
+                                        className="manager-card-rect"
+                                        initial={{ opacity: 0, y: 50 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 2.5 + (i * 0.2) }}
+                                    >
+                                        <img src={mgr.photo} className="mgr-rect-photo" />
+                                        <div className="mgr-rect-info">
+                                            <div className="mgr-rect-name">{mgr.name}</div>
+                                            <div className="mgr-rect-role">MANAGER</div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        )}
+                    </motion.div>
+                )}
+
+                {isFinished && (
+                    <div className="parade-grid-screen">
+                        <h1 className="reveal-title" style={{ marginBottom: 50 }}>THE TEAMS ARE READY</h1>
+                        <div className="teams-grid-final">
+                            {teams.map((t, i) => (
+                                <motion.div
+                                    key={t.id}
+                                    initial={{ opacity: 0, y: 50 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: i * 0.2 }}
+                                    className="final-team-card"
+                                >
+                                    <img src={t.logo} />
+                                    <div className="name">{t.name}</div>
                                 </motion.div>
                             ))}
                         </div>
@@ -289,6 +413,17 @@ export default function AuctionScreen() {
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* 🚀 TRANSFER ANIMATION (Flying Photo) */}
+                {data.status === 'sold' && (
+                    <motion.img
+                        src={data.photo}
+                        className="transfer-flying-photo"
+                        initial={{ top: '40%', left: '50%', x: '-50%', y: '-50%', scale: 1, opacity: 1 }}
+                        animate={{ top: '20%', left: '90%', scale: 0, opacity: 0 }}
+                        transition={{ delay: 0.5, duration: 1.5, ease: "easeInOut" }}
+                    />
+                )}
             </div>
 
             {/* RIGHT */}

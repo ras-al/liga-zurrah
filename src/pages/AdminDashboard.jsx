@@ -25,6 +25,15 @@ export default function AdminDashboard() {
         setLoading(false);
     };
 
+    const [teams, setTeams] = useState([]);
+    useEffect(() => {
+        const fetchTeams = async () => {
+            const snap = await getDocs(collection(db, 'teams'));
+            setTeams(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        };
+        fetchTeams();
+    }, []);
+
     const updateStatus = async (id, status) => {
         setUsers(users.map(u => u.id === id ? { ...u, status } : u));
         await updateDoc(doc(db, 'registrations', id), { status });
@@ -645,6 +654,22 @@ export default function AdminDashboard() {
                                                 value={editFormData.phone || ''}
                                                 onChange={handleEditChange}
                                             />
+                                        </div>
+
+                                        {/* TEAM ASSIGNMENT (For Managers & Sold Players) */}
+                                        <div className="form-group">
+                                            <label style={{ color: '#888', fontSize: '0.8rem', display: 'block', marginBottom: '5px' }}>ASSIGN TEAM</label>
+                                            <select
+                                                style={{ padding: '10px', background: '#222', color: 'white', border: '1px solid #333', width: '100%', boxSizing: 'border-box', borderRadius: '4px' }}
+                                                name="teamId"
+                                                value={editFormData.teamId || ''}
+                                                onChange={handleEditChange}
+                                            >
+                                                <option value="">-- No Team --</option>
+                                                {teams.map(t => (
+                                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                                ))}
+                                            </select>
                                         </div>
 
                                         {editFormData.role === 'Player' && (

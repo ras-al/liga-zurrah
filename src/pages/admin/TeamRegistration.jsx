@@ -13,6 +13,7 @@ export default function TeamRegistration() {
     const [selectedManagers, setSelectedManagers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [passcode, setPasscode] = useState('');
+    const [managerSearch, setManagerSearch] = useState('');
 
     const fetchData = async () => {
         const tSnap = await getDocs(collection(db, 'teams'));
@@ -61,12 +62,12 @@ export default function TeamRegistration() {
         const assignedManagers = managers.filter(m => selectedManagers.includes(m.id)).map(m => ({
             id: m.id,
             name: m.name,
-            phone: m.phone,
-            photo: m.photo
+            phone: m.phone
+            // photo: m.photo // REMOVED TO PREVENT DOC SIZE > 1MB
         }));
 
         try {
-            await addDoc(collection(db, 'teams'), {
+            const teamRef = await addDoc(collection(db, 'teams'), {
                 name: teamName,
                 passcode: passcode,
                 logo: teamLogo || 'https://placehold.co/100?text=TEAM',
@@ -74,26 +75,44 @@ export default function TeamRegistration() {
                 managers: assignedManagers
             });
 
-            toast.success("Team Created Successfully!");
+            // UPDATE MANAGER DOCUMENTS WITH TEAM ID
+            await Promise.all(selectedManagers.map(managerId =>
+                updateDoc(doc(db, 'registrations', managerId), { teamId: teamRef.id })
+            ));
+
+            toast.success("Team Created & Managers Linked!");
             setTeamName('');
             setPasscode('');
             setTeamLogo('');
             setSelectedManagers([]);
             fetchData();
         } catch (err) {
+            console.error(err);
             toast.error("Failed to create team.");
         }
     };
 
     const removeTeam = async (id) => {
         if (confirm("Delete team? This cannot be undone.")) {
+            // Unlink Managers First
+            const teamToDelete = teams.find(t => t.id === id);
+            if (teamToDelete && teamToDelete.managers) {
+                await Promise.all(teamToDelete.managers.map(m =>
+                    updateDoc(doc(db, 'registrations', m.id), { teamId: null })
+                ));
+            }
+
             await deleteDoc(doc(db, 'teams', id));
             fetchData();
-            toast.success("Team Deleted");
+            toast.success("Team Deleted & Managers Unlinked");
         }
     }
 
     if (loading) return <Loading />;
+
+    const filteredManagers = managers.filter(m =>
+        m.name.toLowerCase().includes(managerSearch.toLowerCase())
+    );
 
     return (
         <AdminLayout>
@@ -132,21 +151,23 @@ export default function TeamRegistration() {
 
                     {/* Team Logo Upload */}
                     <div style={{ marginBottom: '20px' }}>
-                        <label style={{ display: 'block', marginBottom: '10px', color: '#888' }}>TEAM LOGO (Upload)</label>
+                        <label style={{ display: 'block', marginBottom: '10px', color: '#888' }}>TEAM LOGO (Upload - Max 5MB)</label>
                         <input
                             type="file"
                             accept="image/*"
                             onChange={(e) => {
                                 const file = e.target.files[0];
                                 if (file) {
+                                    if (file.size > 5 * 1024 * 1024) return toast.error("Logo too big! Max 5MB allowed.");
+
                                     // Resize Image using Canvas
                                     const reader = new FileReader();
                                     reader.onload = (readerEvent) => {
                                         const img = new Image();
                                         img.onload = () => {
                                             const canvas = document.createElement('canvas');
-                                            const MAX_WIDTH = 300;
-                                            const MAX_HEIGHT = 300;
+                                            const MAX_WIDTH = 800;
+                                            const MAX_HEIGHT = 800;
                                             let width = img.width;
                                             let height = img.height;
 
@@ -187,13 +208,23 @@ export default function TeamRegistration() {
 
                     {/* Manager Selection */}
                     <div style={{ marginBottom: '20px' }}>
-                        <label style={{ display: 'block', marginBottom: '10px', color: '#888' }}>
-                            SELECT MANAGERS <span style={{ color: selectedManagers.length < 2 ? 'var(--neon-red)' : 'var(--neon-gold)' }}>
-                                ({selectedManagers.length} Selected - Min 2)
-                            </span>
-                        </label>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                            <label style={{ display: 'block', color: '#888' }}>
+                                SELECT MANAGERS <span style={{ color: selectedManagers.length < 2 ? 'var(--neon-red)' : 'var(--neon-gold)' }}>
+                                    ({selectedManagers.length} Selected - Min 2)
+                                </span>
+                            </label>
+                            <input
+                                type="text"
+                                placeholder="Search Managers..."
+                                value={managerSearch}
+                                onChange={(e) => setManagerSearch(e.target.value)}
+                                style={{ padding: '5px 10px', background: '#222', border: '1px solid #444', color: 'white', borderRadius: '4px', fontSize: '0.8rem', width: '200px' }}
+                            />
+                        </div>
+
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px', maxHeight: '300px', overflowY: 'auto', padding: '10px', background: '#050505', border: '1px solid #333', borderRadius: '4px' }}>
-                            {managers.length === 0 ? <p style={{ color: '#666', padding: '10px' }}>No Approved Managers Found</p> : managers.map(mgr => (
+                            {filteredManagers.length === 0 ? <p style={{ color: '#666', padding: '10px' }}>No Managers Found</p> : filteredManagers.map(mgr => (
                                 <div
                                     key={mgr.id}
                                     onClick={() => toggleManager(mgr.id)}
@@ -236,7 +267,7 @@ export default function TeamRegistration() {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                                     {team.managers && team.managers.length > 0 ? team.managers.map(m => (
                                         <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <img src={m.photo} style={{ width: 20, height: 20, borderRadius: '50%' }} />
+                                            {/* Photo removed to save space */}
                                             <span style={{ fontSize: '0.9rem', color: '#ccc' }}>{m.name}</span>
                                         </div>
                                     )) : <span style={{ color: '#444' }}>No Managers</span>}
@@ -256,6 +287,6 @@ export default function TeamRegistration() {
                     ))}
                 </tbody>
             </table>
-        </AdminLayout>
+        </AdminLayout >
     );
 }

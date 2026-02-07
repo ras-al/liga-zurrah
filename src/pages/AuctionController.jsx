@@ -176,6 +176,14 @@ export default function AuctionController() {
         }, { merge: true });
     };
 
+    const launchParade = async () => {
+        if (!confirm("Start Team Parade? This will take over the screen.")) return;
+        await setDoc(doc(db, 'auction', 'live'), {
+            status: 'parade',
+            startTime: Date.now()
+        });
+    };
+
     const increaseBid = async (amount) => {
         if (!currentAuction || currentAuction.status !== 'live') return;
 
@@ -335,12 +343,22 @@ export default function AuctionController() {
                 )}
 
                 {/* LAUNCH INTRO BUTTON */}
-                <button
-                    onClick={launchIntro}
-                    className="launch-intro-btn"
-                >
-                    LAUNCH {activeTab.toUpperCase()} INTRO
-                </button>
+                <div style={{ display: 'flex', gap: '10px', margin: '0 15px 15px' }}>
+                    <button
+                        onClick={launchIntro}
+                        className="launch-intro-btn"
+                        style={{ flex: 1, margin: 0 }}
+                    >
+                        LAUNCH {activeTab.toUpperCase()} INTRO
+                    </button>
+                    <button
+                        onClick={launchParade}
+                        className="launch-intro-btn"
+                        style={{ flex: 1, margin: 0, background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' }}
+                    >
+                        TEAM PARADE
+                    </button>
+                </div>
 
                 {/* Search Input */}
                 <div className="pool-search-box">
