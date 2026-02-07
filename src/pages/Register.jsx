@@ -100,8 +100,8 @@ export default function Register() {
             return toast.error("Player Registration is Full (Max 144)!");
         }
 
-        if (role === 'Manager') {
-            return toast.error("Manager Registration is Closed!");
+        if (role === 'Manager' && stats.managers >= 48) {
+            return toast.error("Manager Registration is Full (Max 48)!");
         }
 
         // 1. Strict Validation
@@ -177,21 +177,21 @@ export default function Register() {
 
             {/* Organized & Wonderful Header */}
             <div className="reg-header">
-                <h2 className="reg-title">PLAYER REGISTRATION</h2>
+                <h2 className="reg-title">REGISTRATION</h2>
                 <div className="reg-divider"></div>
                 <p className="reg-subtitle">SEASON 2026 • OFFICIAL DRAFT</p>
                 <div className="reg-stats">
                     <span>TOTAL REGISTERED:</span>
                     <strong style={{ color: '#fff', marginLeft: '5px' }}>{stats.players} / 144 PLAYERS</strong>
                     <span style={{ margin: '0 10px' }}>|</span>
-                    <strong style={{ color: '#fff' }}>MANAGERS CLOSED</strong>
+                    <strong style={{ color: '#fff' }}>{stats.managers} / 48 MANAGERS</strong>
                 </div>
             </div>
 
             <div className="glass-panel">
                 <div className="role-toggle">
                     <div className={`role-btn ${role === 'Player' ? 'active' : ''}`} onClick={() => setRole('Player')}>PLAYER</div>
-                    <div className={`role-btn disabled`} style={{ opacity: 0.5, cursor: 'not-allowed' }}>MANAGER (FULL)</div>
+                    <div className={`role-btn ${role === 'Manager' ? 'active' : ''}`} onClick={() => setRole('Manager')}>MANAGER</div>
                 </div>
 
                 <form onSubmit={handleSubmit}>
