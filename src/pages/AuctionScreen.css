@@ -180,8 +180,9 @@
     align-items: center;
     justify-content: center;
     position: relative;
+    justify-content: center;
+    position: relative;
     padding-bottom: 60px;
-    /* Space for ticker */
 }
 
 /* Spotlight Effect behind player */
@@ -199,7 +200,8 @@
 }
 
 .auction-player-img {
-    height: 52vh;
+    height: 65vh;
+    /* Increased from 52vh */
     width: auto;
     max-width: 90%;
     object-fit: cover;
@@ -1009,16 +1011,25 @@
 }
 
 /* --- AUCTION SCREEN SPONSORS --- */
-/* --- AUCTION SCREEN SPONSORS (SIDE) --- */
-.auction-sponsor-logo {
+/* --- AUCTION SCREEN SPONSORS --- */
+.live-sponsors-top {
     position: absolute;
-    width: 140px;
-    height: 140px;
+    top: 10px;
+    /* Moved up from 30px */
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 60px;
+    align-items: center;
     z-index: 1000;
+}
+
+.auction-sponsor-logo {
+    width: auto;
+    height: 100px;
+    /* Reduced from 120px */
     filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
     transition: transform 0.3s ease;
-    top: 50px;
-    /* Fixed distance from top */
     object-fit: contain;
 }
 
@@ -1027,15 +1038,7 @@
     filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.5));
 }
 
-.sponsor-side-left {
-    left: 40px;
-    /* Far left edge */
-}
-
-.sponsor-side-right {
-    right: 40px;
-    /* Far right edge */
-}
+/* Side classes removed/deprecated as requested */
 
 /* --- IDLE/WAITING LARGE SPONSORS --- */
 .auction-screen-idle {
@@ -1064,40 +1067,65 @@
     z-index: 1;
 }
 
-.auction-idle-sponsors {
+/* --- NEW IDLE VERTICAL LAYOUT --- */
+.auction-idle-vertical {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    gap: 100px;
-    z-index: 2;
-    animation: fadeIn 1.5s ease;
+    justify-content: center;
+    gap: 60px;
+    width: 100%;
+    max-width: 1600px;
 }
 
-.sponsor-large {
-    width: 350px;
-    height: 350px;
+.idle-sponsors-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 20px;
+}
+
+.sponsor-medium {
+    height: 180px;
+    width: auto;
+    max-width: 220px;
     object-fit: contain;
-    filter: drop-shadow(0 0 50px rgba(255, 255, 255, 0.1));
+    filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.15));
     animation: float 6s ease-in-out infinite;
-    z-index: 2;
+    transition: transform 0.3s;
 }
 
+.sponsor-medium:hover {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 40px rgba(251, 191, 36, 0.3));
+}
+
+.sponsor-divider {
+    width: 2px;
+    height: 100px;
+    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.2), transparent);
+}
+
+/* Center Column & Text Sizing */
 .idle-center-content {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 15px;
-    z-index: 5;
+    z-index: 10;
+    gap: 20px;
+    /* Spacing between logo and text */
 }
 
+/* Updated Logo Size */
 .idle-main-logo {
-    width: 250px;
-    height: 250px;
+    width: 220px;
+    height: 220px;
     object-fit: contain;
     border-radius: 50%;
-    border: 4px solid var(--neon-gold);
-    box-shadow: 0 0 40px rgba(251, 191, 36, 0.4);
-    margin-bottom: 20px;
+    border: 6px solid var(--neon-gold);
+    box-shadow: 0 0 60px rgba(251, 191, 36, 0.5);
+    margin-bottom: 30px;
 }
 
 .idle-center-content .glitch-text {
@@ -1105,10 +1133,13 @@
     letter-spacing: 5px;
     text-transform: uppercase;
     text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
-    font-size: 5rem;
+    font-size: 4rem;
+    /* Reduced from 5rem */
     color: white;
     line-height: 1;
 }
+
+/* Removed old .sponsor-large class reference if unused, kept if needed elsewhere */
 
 .official-text {
     font-family: 'Bebas Neue', sans-serif;

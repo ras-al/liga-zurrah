@@ -172,16 +172,22 @@ export default function AuctionScreen() {
 
     if (!data) return (
         <div className="auction-screen-idle">
-            <div className="auction-idle-sponsors">
-                <img src="/sponser1.png" className="sponsor-large" alt="Sponsor 1" />
-
+            <div className="auction-idle-vertical">
+                {/* 1. TOP: LOGO & TITLE */}
                 <div className="idle-center-content">
                     <img src="/logo_circle.png" className="idle-main-logo" alt="Liga Logo" />
                     <div className="glitch-text" data-text="LIGA ZURRHA">LIGA ZURRHA</div>
                     <div className="official-text">OFFICIAL SPONSORS</div>
                 </div>
 
-                <img src="/sponser2.png" className="sponsor-large" alt="Sponsor 2" />
+                {/* 2. BOTTOM: SPONSORS ROW */}
+                <div className="idle-sponsors-row">
+                    <img src="/sponser1.png" className="sponsor-medium" alt="Sponsor 1" />
+                    <div className="sponsor-divider"></div>
+                    <img src="/sponser2.png" className="sponsor-medium" alt="Sponsor 2" />
+                    <div className="sponsor-divider"></div>
+                    <img src="/sponser3.png" className="sponsor-medium" alt="Sponsor 3" />
+                </div>
             </div>
             <h2 className="pulse-text" style={{ color: 'var(--neon-gold)', marginTop: 40, fontFamily: 'Bebas Neue', letterSpacing: 8, fontSize: '1.5rem', zIndex: 2 }}>WAITING TO START...</h2>
         </div>
@@ -408,21 +414,27 @@ export default function AuctionScreen() {
                     transition={{ duration: 2.5, ease: "easeOut" }}
                 />
 
-                {/* --- SPONSOR LOGOS (Left/Right of Player) --- */}
-                {data.photo ? (
-                    <>
-                        <img src="/sponser1.png" className="auction-sponsor-logo sponsor-side-left" alt="Sponsor 1" />
-                        <img src="/sponser2.png" className="auction-sponsor-logo sponsor-side-right" alt="Sponsor 2" />
-                    </>
-                ) : (
+                {/* --- SPONSOR LOGOS (Hidden during Live Auction) --- */}
+                {data.photo ? null : (
                     /* --- IDLE/WAITING STATE: LARGE CENTER LOGOS --- */
-                    <div className="auction-idle-sponsors">
-                        <img src="/sponser1.png" className="sponsor-large" alt="Sponsor 1" />
-                        <div className="idle-text">OFFICIAL SPONSORS</div>
-                        <img src="/sponser2.png" className="sponsor-large" alt="Sponsor 2" />
+                    <div className="auction-idle-vertical">
+                        {/* 1. TOP: LOGO & TITLE */}
+                        <div className="idle-center-content">
+                            <img src="/logo_circle.png" className="idle-main-logo" alt="Liga Logo" />
+                            <div className="glitch-text" data-text="LIGA ZURRHA">LIGA ZURRHA</div>
+                            <div className="official-text">OFFICIAL SPONSORS</div>
+                        </div>
+
+                        {/* 2. BOTTOM: SPONSORS ROW */}
+                        <div className="idle-sponsors-row">
+                            <img src="/sponser1.png" className="sponsor-medium" alt="Sponsor 1" />
+                            <div className="sponsor-divider"></div>
+                            <img src="/sponser2.png" className="sponsor-medium" alt="Sponsor 2" />
+                            <div className="sponsor-divider"></div>
+                            <img src="/sponser3.png" className="sponsor-medium" alt="Sponsor 3" />
+                        </div>
                     </div>
                 )}
-
                 {/* 📸 3. PLAYER PHOTO (Zoom & Blur In) */}
                 {data.photo && (
                     <motion.img

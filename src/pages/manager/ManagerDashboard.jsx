@@ -12,6 +12,7 @@ export default function ManagerDashboard() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('Market'); // 'Market' or 'Squad'
     const [selectedPlayer, setSelectedPlayer] = useState(null); // For Modal
+    const [auctionData, setAuctionData] = useState(null); // Live Auction Data
     const navigate = useNavigate();
 
     // 1. Auth Check & Team Stream
@@ -39,9 +40,17 @@ export default function ManagerDashboard() {
             }
         });
 
+        // 3. Live Auction Stream
+        const unsubAuction = onSnapshot(doc(db, 'auction', 'live'), (doc) => {
+            if (doc.exists()) {
+                setAuctionData(doc.data());
+            }
+        });
+
         return () => {
             unsubTeam();
             unsubSettings();
+            unsubAuction();
         };
     }, []);
 
@@ -80,6 +89,13 @@ export default function ManagerDashboard() {
         return unlockedGroups.includes(category);
     });
 
+    // --- LIVE PLAYER LOGIC ---
+    const livePlayer = auctionData &&
+        auctionData.status !== 'intro' &&
+        auctionData.status !== 'reveal' &&
+        auctionData.status !== 'parade' &&
+        auctionData.name ? auctionData : null;
+
     return (
         <div style={{ background: '#000', minHeight: '100vh', paddingBottom: '80px', fontFamily: 'Inter, sans-serif' }}>
 
@@ -103,6 +119,53 @@ export default function ManagerDashboard() {
                     LOGOUT
                 </button>
             </div>
+
+            {/* --- LIVE AUCTION PLAYER CARD --- */}
+            <AnimatePresence>
+                {livePlayer && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        style={{ overflow: 'hidden', background: '#0a0a0a', borderBottom: '1px solid #333' }}
+                    >
+                        <div style={{ padding: '15px', display: 'flex', gap: '15px', alignItems: 'center', background: 'linear-gradient(90deg, #1a1a1a 0%, #000 100%)' }}>
+                            <div style={{ position: 'relative' }}>
+                                <img src={livePlayer.photo} alt={livePlayer.name} style={{ width: 80, height: 80, borderRadius: '8px', objectFit: 'cover', border: '2px solid var(--neon-gold, #facc15)' }} />
+                                <div style={{ position: 'absolute', top: -5, left: -5, background: 'red', color: 'white', fontSize: '0.6rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>LIVE</div>
+                            </div>
+
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white' }}>{livePlayer.name}</div>
+                                <div style={{ color: '#888', fontSize: '0.85rem' }}>{livePlayer.position} • {livePlayer.age} YRS</div>
+                                <div style={{ display: 'flex', gap: '15px', marginTop: '8px' }}>
+                                    <div>
+                                        <div style={{ fontSize: '0.7rem', color: '#666' }}>CURRENT BID</div>
+                                        <div style={{ color: 'var(--neon-gold, #facc15)', fontWeight: 'bold', fontSize: '1.1rem' }}>₹{livePlayer.currentBid || livePlayer.basePrice}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '0.7rem', color: '#666' }}>BIDDER</div>
+                                        <div style={{ color: 'white', fontWeight: 'bold', fontSize: '1.1rem' }}>{livePlayer.bidderTeam || '-'}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Status Stamp if Sold/Unsold */}
+                            {(livePlayer.status === 'sold' || livePlayer.status === 'unsold') && (
+                                <div style={{
+                                    border: `2px solid ${livePlayer.status === 'sold' ? '#4ade80' : 'red'}`,
+                                    color: livePlayer.status === 'sold' ? '#4ade80' : 'red',
+                                    padding: '5px 10px', borderRadius: '4px', fontWeight: 'bold', transform: 'rotate(-10deg)',
+                                    fontSize: '1.2rem', textTransform: 'uppercase',
+                                    whiteSpace: 'nowrap'
+                                }}>
+                                    {livePlayer.status}
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* --- TABS --- */}
             <div style={{ display: 'flex', borderBottom: '1px solid #333' }}>
