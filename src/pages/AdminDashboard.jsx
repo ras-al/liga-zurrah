@@ -144,6 +144,42 @@ export default function AdminDashboard() {
     const [photoPreview, setPhotoPreview] = useState(null);
     const [creating, setCreating] = useState(false);
 
+    // EDIT TEAM STATE
+    const [isEditingTeam, setIsEditingTeam] = useState(false);
+    const [editTeamData, setEditTeamData] = useState({});
+    const [selectedTeam, setSelectedTeam] = useState(null);
+
+    const startEditingTeam = (team) => {
+        setEditTeamData({ ...team });
+        setSelectedTeam(team);
+        setIsEditingTeam(true);
+    };
+
+    const handleTeamEditChange = (e) => {
+        const { name, value } = e.target;
+        setEditTeamData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const saveEditedTeam = async () => {
+        try {
+            const teamRef = doc(db, 'teams', selectedTeam.id);
+            await updateDoc(teamRef, {
+                wallet: Number(editTeamData.wallet),
+                name: editTeamData.name
+            });
+
+            // Local update
+            setTeams(teams.map(t => t.id === selectedTeam.id ? { ...t, ...editTeamData, wallet: Number(editTeamData.wallet) } : t));
+
+            setIsEditingTeam(false);
+            setSelectedTeam(null);
+            alert("Team Updated Successfully!");
+        } catch (error) {
+            console.error("Error updating team:", error);
+            alert("Failed to update team");
+        }
+    };
+
     // EDIT USER STATE
     const [isEditing, setIsEditing] = useState(false);
     const [editFormData, setEditFormData] = useState({});
@@ -334,6 +370,7 @@ export default function AdminDashboard() {
             <div className="role-tabs">
                 <div className={`role-tab ${filter === 'Player' ? 'active' : ''}`} onClick={() => { setFilter('Player'); setPosFilter(null); }}>PLAYERS</div>
                 <div className={`role-tab ${filter === 'Manager' ? 'active' : ''}`} onClick={() => { setFilter('Manager'); setPosFilter(null); }}>MANAGERS</div>
+                <div className={`role-tab ${filter === 'Teams' ? 'active' : ''}`} onClick={() => { setFilter('Teams'); setPosFilter(null); }}>TEAMS</div>
             </div>
 
             {/* POSITION FILTER (Only for Players) */}
@@ -375,100 +412,184 @@ export default function AdminDashboard() {
                 </div>
             )}
 
-            <table className="data-table">
-                <thead>
-                    <tr>
-                        <th>AVATAR</th>
-                        <th>NAME</th>
-                        <th>PHONE</th>
-                        <th>CLASS</th>
-                        <th>DETAILS</th>
-                        <th>STATUS</th>
-                        <th>ACTIONS</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {loading ? (
-                        <>
-                            <SkeletonRow /><SkeletonRow /><SkeletonRow /><SkeletonRow /><SkeletonRow />
-                        </>
-                    ) : (
-                        filtered.map(u => (
-                            <tr key={u.id} onClick={() => setSelectedUser(u)} style={{ cursor: 'pointer' }}>
-                                <td data-label="AVATAR"><img src={u.photo} style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid #333' }} /></td>
-                                <td data-label="NAME">
-                                    <div style={{ fontWeight: 'bold' }}>{u.name}</div>
-                                    {/* VISUAL BADGES */}
-                                    <div style={{ display: 'flex', gap: '5px', marginTop: '2px' }}>
-                                        {u.isMarquee && <span style={{ fontSize: '0.6rem', background: '#fbbf24', color: 'black', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>MARQUEE</span>}
-                                        {u.isSuper && <span style={{ fontSize: '0.6rem', background: '#a855f7', color: 'white', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>SUPER</span>}
-                                    </div>
-                                </td>
-                                <td data-label="PHONE" style={{ color: '#666', fontFamily: 'monospace', fontSize: '1rem' }}>{u.phone}</td>
-                                <td data-label="CLASS">{u.class}</td>
-                                <td data-label="DETAILS">{u.role === 'Player' ? u.position : u.experience || 'N/A'}</td>
-                                <td data-label="STATUS">
-                                    <span className={`status-pill status-${u.status}`}>
-                                        {u.status}
-                                    </span>
-                                </td>
-                                <td data-label="ACTIONS" onClick={(e) => e.stopPropagation()}>
-                                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
-                                        {/* TAGGING BUTTONS */}
-                                        {u.role === 'Player' && (
-                                            <>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); toggleTag(u.id, 'isMarquee', u.isMarquee); }}
-                                                    style={{
-                                                        width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold', transition: 'all 0.2s',
-                                                        background: u.isMarquee ? '#fbbf24' : '#1a1a1a',
-                                                        color: u.isMarquee ? '#000' : '#555',
-                                                        border: u.isMarquee ? 'none' : '1px solid #333',
-                                                        boxShadow: u.isMarquee ? '0 0 10px rgba(251, 191, 36, 0.4)' : 'none'
-                                                    }}
-                                                    title="Toggle Marquee"
-                                                >
-                                                    M
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); toggleTag(u.id, 'isSuper', u.isSuper); }}
-                                                    style={{
-                                                        width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold', transition: 'all 0.2s',
-                                                        background: u.isSuper ? '#a855f7' : '#1a1a1a',
-                                                        color: u.isSuper ? '#fff' : '#555',
-                                                        border: u.isSuper ? 'none' : '1px solid #333',
-                                                        boxShadow: u.isSuper ? '0 0 10px rgba(168, 85, 247, 0.4)' : 'none'
-                                                    }}
-                                                    title="Toggle Super"
-                                                >
-                                                    S
-                                                </button>
-                                                <div style={{ width: '1px', height: '20px', background: '#333', margin: '0 5px' }}></div>
-                                            </>
-                                        )}
-
+            {filter === 'Teams' ? (
+                // TEAMS TABLE
+                <table className="data-table">
+                    <thead>
+                        <tr>
+                            <th>LOGO</th>
+                            <th>TEAM NAME</th>
+                            <th>WALLET (₹)</th>
+                            <th>PLAYERS BOUGHT</th>
+                            <th>ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {teams.map(team => {
+                            const playersBought = users.filter(u => u.teamId === team.id && u.role === 'Player').length;
+                            return (
+                                <tr key={team.id}>
+                                    <td data-label="LOGO">
+                                        {team.logo && <img src={team.logo} style={{ width: 40, height: 40, borderRadius: '50%' }} alt="logo" />}
+                                    </td>
+                                    <td data-label="TEAM NAME" style={{ fontWeight: 'bold' }}>{team.name}</td>
+                                    <td data-label="WALLET" style={{ color: '#4ade80', fontWeight: 'bold' }}>₹{team.wallet}</td>
+                                    <td data-label="PLAYERS BOUGHT">{playersBought}</td>
+                                    <td data-label="ACTIONS">
                                         <button
-                                            onClick={() => deleteUser(u.id)}
-                                            style={{
-                                                background: '#1a1a1a', border: '1px solid #333', color: '#ef4444',
-                                                padding: '0 12px', height: '32px', borderRadius: '6px', cursor: 'pointer',
-                                                fontSize: '0.75rem', fontWeight: 'bold', letterSpacing: '0.5px',
-                                                transition: 'all 0.2s'
-                                            }}
-                                            onMouseEnter={(e) => { e.target.style.background = '#ef4444'; e.target.style.color = 'white'; e.target.style.border = '1px solid #ef4444'; }}
-                                            onMouseLeave={(e) => { e.target.style.background = '#1a1a1a'; e.target.style.color = '#ef4444'; e.target.style.border = '1px solid #333'; }}
+                                            className="admin-btn"
+                                            onClick={() => startEditingTeam(team)}
+                                            style={{ padding: '5px 10px', fontSize: '0.8rem' }}
                                         >
-                                            DELETE
+                                            EDIT
                                         </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))
-                    )}
-                </tbody>
-            </table>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            ) : (
+                <table className="data-table">
+                    <thead>
+                        <tr>
+                            <th>AVATAR</th>
+                            <th>NAME</th>
+                            <th>PHONE</th>
+                            <th>CLASS</th>
+                            <th>DETAILS</th>
+                            <th>STATUS</th>
+                            <th>ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {loading ? (
+                            <>
+                                <SkeletonRow /><SkeletonRow /><SkeletonRow /><SkeletonRow /><SkeletonRow />
+                            </>
+                        ) : (
+                            filtered.map(u => (
+                                <tr key={u.id} onClick={() => setSelectedUser(u)} style={{ cursor: 'pointer' }}>
+                                    <td data-label="AVATAR"><img src={u.photo} style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid #333' }} /></td>
+                                    <td data-label="NAME">
+                                        <div style={{ fontWeight: 'bold' }}>{u.name}</div>
+                                        {/* VISUAL BADGES */}
+                                        <div style={{ display: 'flex', gap: '5px', marginTop: '2px' }}>
+                                            {u.isMarquee && <span style={{ fontSize: '0.6rem', background: '#fbbf24', color: 'black', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>MARQUEE</span>}
+                                            {u.isSuper && <span style={{ fontSize: '0.6rem', background: '#a855f7', color: 'white', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>SUPER</span>}
+                                        </div>
+                                    </td>
+                                    <td data-label="PHONE" style={{ color: '#666', fontFamily: 'monospace', fontSize: '1rem' }}>{u.phone}</td>
+                                    <td data-label="CLASS">{u.class}</td>
+                                    <td data-label="DETAILS">{u.role === 'Player' ? u.position : u.experience || 'N/A'}</td>
+                                    <td data-label="STATUS">
+                                        <span className={`status-pill status-${u.status}`}>
+                                            {u.status}
+                                        </span>
+                                    </td>
+                                    <td data-label="ACTIONS" onClick={(e) => e.stopPropagation()}>
+                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                            {/* TAGGING BUTTONS */}
+                                            {u.role === 'Player' && (
+                                                <>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); toggleTag(u.id, 'isMarquee', u.isMarquee); }}
+                                                        style={{
+                                                            width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                            borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold', transition: 'all 0.2s',
+                                                            background: u.isMarquee ? '#fbbf24' : '#1a1a1a',
+                                                            color: u.isMarquee ? '#000' : '#555',
+                                                            border: u.isMarquee ? 'none' : '1px solid #333',
+                                                            boxShadow: u.isMarquee ? '0 0 10px rgba(251, 191, 36, 0.4)' : 'none'
+                                                        }}
+                                                        title="Toggle Marquee"
+                                                    >
+                                                        M
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); toggleTag(u.id, 'isSuper', u.isSuper); }}
+                                                        style={{
+                                                            width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                            borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold', transition: 'all 0.2s',
+                                                            background: u.isSuper ? '#a855f7' : '#1a1a1a',
+                                                            color: u.isSuper ? '#fff' : '#555',
+                                                            border: u.isSuper ? 'none' : '1px solid #333',
+                                                            boxShadow: u.isSuper ? '0 0 10px rgba(168, 85, 247, 0.4)' : 'none'
+                                                        }}
+                                                        title="Toggle Super"
+                                                    >
+                                                        S
+                                                    </button>
+                                                    <div style={{ width: '1px', height: '20px', background: '#333', margin: '0 5px' }}></div>
+                                                </>
+                                            )}
+
+                                            <button
+                                                onClick={() => deleteUser(u.id)}
+                                                style={{
+                                                    background: '#1a1a1a', border: '1px solid #333', color: '#ef4444',
+                                                    padding: '0 12px', height: '32px', borderRadius: '6px', cursor: 'pointer',
+                                                    fontSize: '0.75rem', fontWeight: 'bold', letterSpacing: '0.5px',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                                onMouseEnter={(e) => { e.target.style.background = '#ef4444'; e.target.style.color = 'white'; e.target.style.border = '1px solid #ef4444'; }}
+                                                onMouseLeave={(e) => { e.target.style.background = '#1a1a1a'; e.target.style.color = '#ef4444'; e.target.style.border = '1px solid #333'; }}
+                                            >
+                                                DELETE
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            )}
+
+            {/* TEAM EDIT MODAL */}
+            <AnimatePresence>
+                {isEditingTeam && selectedTeam && (
+                    <motion.div
+                        className="modal-overlay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <motion.div
+                            className="profile-modal"
+                            initial={{ scale: 0.8, opacity: 0, y: 50 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.8, opacity: 0, y: 50 }}
+                        >
+                            <button className="close-modal-btn" onClick={() => { setIsEditingTeam(false); setSelectedTeam(null); }}>✕</button>
+                            <h2 style={{ color: 'white', marginBottom: '20px', fontFamily: 'Anton' }}>EDIT TEAM</h2>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                <div className="form-group">
+                                    <label style={{ color: '#888', fontSize: '0.8rem', display: 'block', marginBottom: '5px' }}>TEAM NAME</label>
+                                    <input
+                                        style={{ padding: '10px', background: '#222', color: 'white', border: '1px solid #333', width: '100%', boxSizing: 'border-box' }}
+                                        name="name"
+                                        value={editTeamData.name || ''}
+                                        onChange={handleTeamEditChange}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label style={{ color: '#888', fontSize: '0.8rem', display: 'block', marginBottom: '5px' }}>WALLET BALANCE (₹)</label>
+                                    <input
+                                        type="number"
+                                        style={{ padding: '10px', background: '#222', color: 'white', border: '1px solid #333', width: '100%', boxSizing: 'border-box' }}
+                                        name="wallet"
+                                        value={editTeamData.wallet || 0}
+                                        onChange={handleTeamEditChange}
+                                    />
+                                </div>
+                                <button className="modal-btn approve" onClick={saveEditedTeam}>SAVE CHANGES</button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* ADD USER MODAL */}
             <AnimatePresence>
@@ -574,6 +695,12 @@ export default function AdminDashboard() {
                                             <span>POSITIONS</span>
                                             <strong>{selectedUser.position || 'N/A'}</strong>
                                         </div>
+                                        {selectedUser.role === 'Player' && (
+                                            <div className="detail-row">
+                                                <span>SOLD PRICE</span>
+                                                <strong style={{ color: '#4ade80' }}>₹{selectedUser.soldPrice || 0}</strong>
+                                            </div>
+                                        )}
                                         <div className="detail-row">
                                             <span>STATUS</span>
                                             <span className={`status-pill status-${selectedUser.status}`}>
@@ -673,27 +800,56 @@ export default function AdminDashboard() {
                                         </div>
 
                                         {editFormData.role === 'Player' && (
-                                            <div style={{ display: 'flex', gap: '10px' }}>
-                                                <div className="form-group" style={{ flex: 1 }}>
-                                                    <label style={{ color: '#888', fontSize: '0.8rem', display: 'block', marginBottom: '5px' }}>AGE</label>
+                                            <>
+                                                <div style={{ display: 'flex', gap: '10px' }}>
+                                                    <div className="form-group" style={{ flex: 1 }}>
+                                                        <label style={{ color: '#888', fontSize: '0.8rem', display: 'block', marginBottom: '5px' }}>AGE</label>
+                                                        <input
+                                                            style={{ padding: '10px', background: '#222', color: 'white', border: '1px solid #333', width: '100%', boxSizing: 'border-box', borderRadius: '4px' }}
+                                                            type="number"
+                                                            name="age"
+                                                            value={editFormData.age || ''}
+                                                            onChange={handleEditChange}
+                                                        />
+                                                    </div>
+                                                    <div className="form-group" style={{ flex: 2 }}>
+                                                        <label style={{ color: '#888', fontSize: '0.8rem', display: 'block', marginBottom: '5px' }}>POSITION</label>
+                                                        <input
+                                                            style={{ padding: '10px', background: '#222', color: 'white', border: '1px solid #333', width: '100%', boxSizing: 'border-box', borderRadius: '4px' }}
+                                                            name="position"
+                                                            value={editFormData.position || ''}
+                                                            onChange={handleEditChange}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="form-group">
+                                                    <label style={{ color: '#888', fontSize: '0.8rem', display: 'block', marginBottom: '5px' }}>SOLD PRICE (₹)</label>
                                                     <input
-                                                        style={{ padding: '10px', background: '#222', color: 'white', border: '1px solid #333', width: '100%', boxSizing: 'border-box', borderRadius: '4px' }}
                                                         type="number"
-                                                        name="age"
-                                                        value={editFormData.age || ''}
-                                                        onChange={handleEditChange}
-                                                    />
-                                                </div>
-                                                <div className="form-group" style={{ flex: 2 }}>
-                                                    <label style={{ color: '#888', fontSize: '0.8rem', display: 'block', marginBottom: '5px' }}>POSITION</label>
-                                                    <input
                                                         style={{ padding: '10px', background: '#222', color: 'white', border: '1px solid #333', width: '100%', boxSizing: 'border-box', borderRadius: '4px' }}
-                                                        name="position"
-                                                        value={editFormData.position || ''}
+                                                        name="soldPrice"
+                                                        value={editFormData.soldPrice || 0}
                                                         onChange={handleEditChange}
                                                     />
                                                 </div>
-                                            </div>
+
+                                                <div className="form-group">
+                                                    <label style={{ color: '#888', fontSize: '0.8rem', display: 'block', marginBottom: '5px' }}>STATUS</label>
+                                                    <select
+                                                        style={{ padding: '10px', background: '#222', color: 'white', border: '1px solid #333', width: '100%', boxSizing: 'border-box', borderRadius: '4px' }}
+                                                        name="status"
+                                                        value={editFormData.status || 'approved'}
+                                                        onChange={handleEditChange}
+                                                    >
+                                                        <option value="approved">Approved</option>
+                                                        <option value="unsold">Unsold</option>
+                                                        <option value="sold">Sold</option>
+                                                        <option value="pending">Pending</option>
+                                                        <option value="rejected">Rejected</option>
+                                                    </select>
+                                                </div>
+                                            </>
                                         )}
                                     </div>
 
