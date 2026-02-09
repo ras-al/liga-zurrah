@@ -551,10 +551,10 @@
 }
 
 .reveal-logo {
-    width: 150px;
-    height: 150px;
+    width: 250px;
+    height: 250px;
     border-radius: 50%;
-    border: 4px solid gold;
+    border: 6px solid gold;
     object-fit: cover;
     margin-bottom: 20px;
     transition: all 0.8s ease-in-out;
@@ -562,16 +562,17 @@
 
 /* When in 'grid' phase, make logo smaller */
 .reveal-header-box.phase-grid .reveal-logo {
-    width: 80px;
-    height: 80px;
+    width: 150px;
+    height: 150px;
     margin-bottom: 5px;
+    border-width: 4px;
 }
 
 .squad-grid-container {
-    margin-top: 150px;
-    /* Reduced margin-top (was 300px) */
+    margin-top: 200px;
+    /* Increased to prevent overlap */
     width: 100%;
-    height: calc(100vh - 150px);
+    height: calc(100vh - 200px);
     overflow-y: auto;
     display: flex;
     justify-content: center;

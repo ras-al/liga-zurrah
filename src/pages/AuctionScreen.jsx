@@ -258,12 +258,12 @@ export default function AuctionScreen() {
                 {/* LOGO & TITLE */}
                 <motion.div
                     initial={{ top: '50%', left: '50%', x: '-50%', y: '-50%', scale: 1, opacity: 1 }}
-                    animate={revealPhase === 'grid' ? { top: '5%', y: '0%', scale: 0.6 } : { scale: [1, 1.1, 1] }}
+                    animate={revealPhase === 'grid' ? { top: '0%', y: '0%', scale: 0.6 } : { scale: [1, 1.1, 1] }}
                     transition={revealPhase === 'grid' ? { duration: 0.8, ease: "easeInOut" } : { repeat: Infinity, duration: 2 }}
                     className={`reveal-header-box ${revealPhase === 'grid' ? 'phase-grid' : ''}`}
                     style={{ position: 'absolute' }}
                 >
-                    {data.viewTeamLogo && <img src={data.viewTeamLogo} className={`reveal-logo ${revealPhase === 'entry' ? 'pulse-massive' : ''}`} style={{ width: 250, height: 250, border: '6px solid gold', marginBottom: 20 }} />}
+                    {data.viewTeamLogo && <img src={data.viewTeamLogo} className={`reveal-logo ${revealPhase === 'entry' ? 'pulse-massive' : ''}`} />}
                     <h1 className="reveal-team-name">{data.viewTeamName}</h1>
                 </motion.div>
 
