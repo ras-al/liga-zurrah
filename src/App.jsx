@@ -13,6 +13,8 @@ import TeamSquads from './pages/admin/TeamSquads';
 import Login from './pages/Login';
 import TeamLogin from './pages/manager/TeamLogin';
 import ManagerDashboard from './pages/manager/ManagerDashboard';
+import TournamentManager from './pages/admin/TournamentManager';
+import TournamentPage from './pages/TournamentPage';
 
 const AdminRoute = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -27,7 +29,7 @@ const AdminRoute = ({ children }) => {
     return () => unsub();
   }, []);
 
-  if (loading) return <div className="flex-center" style={{ height: '100vh' }}><h1>LOADING...</h1></div>;
+  if (loading) return <div className="flex-center" style={{ height: '100vh', color: 'white' }}><h1>LOADING...</h1></div>;
 
   return user ? children : <Navigate to="/login" />;
 };
@@ -43,12 +45,14 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/team-login" element={<TeamLogin />} />
           <Route path="/war-room" element={<ManagerDashboard />} />
+          <Route path="/tournament" element={<TournamentPage />} />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/auction" element={<AdminRoute><AuctionController /></AdminRoute>} />
           <Route path="/admin/teams" element={<AdminRoute><TeamRegistration /></AdminRoute>} />
           <Route path="/admin/squads" element={<AdminRoute><TeamSquads /></AdminRoute>} />
+          <Route path="/admin/tournament" element={<AdminRoute><TournamentManager /></AdminRoute>} />
         </Routes>
       </BrowserRouter>
       <Toaster
