@@ -167,9 +167,11 @@ export default function MatchManager() {
     };
 
     const addEvent = async () => {
-        if (!newEvent.player) return toast.error("Select Player");
+        if (newEvent.type !== 'OWN_GOAL' && !newEvent.player) return toast.error("Select Player");
 
-        const eventData = { ...newEvent, timestamp: Date.now() };
+        const finalPlayerName = (newEvent.type === 'OWN_GOAL' && !newEvent.player) ? 'Own Goal' : newEvent.player;
+
+        const eventData = { ...newEvent, player: finalPlayerName, timestamp: Date.now() };
 
         // Optimistic Update
         const updatedEvents = [...(selectedMatch.events || []), eventData];
@@ -381,17 +383,23 @@ export default function MatchManager() {
                                         <option value="B">{selectedMatch.teamBName}</option>
                                     </select>
 
-                                    {/* UPDATED: Player Select Dropdown */}
-                                    <select
-                                        value={newEvent.player}
-                                        onChange={(e) => setNewEvent({ ...newEvent, player: e.target.value })}
-                                        style={{ flex: 1, background: '#222', color: 'white', border: '1px solid #333', padding: '10px', borderRadius: '4px' }}
-                                    >
-                                        <option value="">Select Player</option>
-                                        {getTeamPlayers(newEvent.team).map(p => (
-                                            <option key={p.id} value={p.name}>{p.name}</option>
-                                        ))}
-                                    </select>
+                                    {/* Player Select or Own Goal Indicator */}
+                                    {newEvent.type === 'OWN_GOAL' ? (
+                                        <div style={{ flex: 1, background: '#222', color: '#888', border: '1px solid #333', padding: '10px', borderRadius: '4px', fontStyle: 'italic', display: 'flex', alignItems: 'center' }}>
+                                            Own Goal
+                                        </div>
+                                    ) : (
+                                        <select
+                                            value={newEvent.player}
+                                            onChange={(e) => setNewEvent({ ...newEvent, player: e.target.value })}
+                                            style={{ flex: 1, background: '#222', color: 'white', border: '1px solid #333', padding: '10px', borderRadius: '4px' }}
+                                        >
+                                            <option value="">Select Player</option>
+                                            {getTeamPlayers(newEvent.team).map(p => (
+                                                <option key={p.id} value={p.name}>{p.name}</option>
+                                            ))}
+                                        </select>
+                                    )}
 
                                     <input
                                         placeholder="Min'"
