@@ -254,9 +254,7 @@ export default function MatchManager() {
                 <h2 style={{ color: 'var(--neon-gold)', fontFamily: 'Anton' }}>MATCH FIXTURES</h2>
                 <div style={{ display: 'flex', gap: '10px' }}>
                     <button onClick={() => setShowAddModal(true)} className="admin-btn" style={{ background: '#333' }}>+ ADD CUSTOM</button>
-                    {/*<button onClick={generateFixtures} disabled={generating} className="admin-btn">
-                        {generating ? '...' : 'GENERATE'}
-                    </button>*/}
+
                 </div>
             </div>
 

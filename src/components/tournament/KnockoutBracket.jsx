@@ -43,12 +43,8 @@ export default function KnockoutBracket({ isAdmin }) {
             const match = newBracket[matchId];
             const winner = match.scoreA > match.scoreB ? match.teamA : match.teamB;
 
-            // Map Next Round
+            // Map Next Round (SF -> FINAL)
             const nextMap = {
-                'QF1': { next: 'SF1', slot: 'teamA' },
-                'QF2': { next: 'SF1', slot: 'teamB' },
-                'QF3': { next: 'SF2', slot: 'teamA' },
-                'QF4': { next: 'SF2', slot: 'teamB' },
                 'SF1': { next: 'FINAL', slot: 'teamA' },
                 'SF2': { next: 'FINAL', slot: 'teamB' }
             };
@@ -144,19 +140,8 @@ export default function KnockoutBracket({ isAdmin }) {
 
     return (
         <div className="bracket-scroll-wrapper" style={{ overflowX: 'auto', width: '100%', paddingBottom: '20px' }}>
-            <div className="bracket-container" style={{ display: 'flex', alignItems: 'center', gap: '40px', padding: '0 20px', minWidth: 'max-content' }}>
-                {/* Round 1: QF */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    {renderMatch('QF1', 'QUARTER FINAL 1')}
-                    {renderMatch('QF2', 'QUARTER FINAL 2')}
-                    {renderMatch('QF3', 'QUARTER FINAL 3')}
-                    {renderMatch('QF4', 'QUARTER FINAL 4')}
-                </div>
-
-                {/* Connectors (Visual only) */}
-                <div style={{ width: '20px', height: '2px', background: '#333' }}></div>
-
-                {/* Round 2: SF */}
+            <div className="bracket-container" style={{ display: 'flex', alignItems: 'center', gap: '40px', padding: '0 20px', minWidth: 'max-content', justifyContent: 'center' }}>
+                {/* Round 1: SF */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '150px' }}>
                     {renderMatch('SF1', 'SEMI FINAL 1')}
                     {renderMatch('SF2', 'SEMI FINAL 2')}
@@ -165,7 +150,7 @@ export default function KnockoutBracket({ isAdmin }) {
                 {/* Connectors */}
                 <div style={{ width: '20px', height: '2px', background: '#333' }}></div>
 
-                {/* Round 3: FINAL */}
+                {/* Round 2: FINAL */}
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <div style={{ transform: 'scale(1.2)' }}>
                         {renderMatch('FINAL', '🏆 GRAND FINAL 🏆')}
