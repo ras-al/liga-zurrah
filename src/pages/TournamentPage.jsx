@@ -80,13 +80,13 @@ export default function TournamentPage() {
             </div>
 
             {/* CONTENT */}
-            <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px 15px' }}>
+            <div className="tournament-content" style={{ maxWidth: '1200px', width: '100%', margin: '0 auto' }}>
                 {activeTab === 'TABLE' && (
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+                        <div className="groups-grid">
                             {['A', 'B', 'C', 'D'].map(group => (
                                 <div key={group} className="glass-panel" style={{ padding: '15px', background: '#111', border: '1px solid #333', borderRadius: '8px' }}>
-                                    <h3 style={{ color: 'white', borderBottom: '1px solid #333', paddingBottom: '10px', marginBottom: '10px', fontSize: '1.2rem', fontFamily: 'Anton' }}>GROUP {group}</h3>
+                                    <h3 style={{ color: 'white', borderBottom: '1px solid #333', paddingBottom: '10px', marginBottom: '10px', fontSize: '1.2rem', fontFamily: 'Anton', textAlign: 'center' }}>GROUP {group}</h3>
                                     <div style={{ overflowX: 'auto' }}>
                                         <PointsTable filterGroup={group} />
                                     </div>
@@ -243,10 +243,19 @@ export default function TournamentPage() {
                     .desktop-name { display: none !important; }
                     .mobile-name { display: block !important; }
                     .matches-list { gap: 8px; }
+                    .groups-grid { grid-template-columns: 1fr; }
+                    .desktop-only { display: none !important; }
+                    .tournament-content { padding: 10px; }
                 }
                 @media (min-width: 601px) {
                     .desktop-name { display: block !important; }
                     .mobile-name { display: none !important; }
+                    .groups-grid { grid-template-columns: repeat(2, 1fr); }
+                    .tournament-content { padding: 20px; }
+                }
+                .groups-grid {
+                    display: grid;
+                    gap: 20px;
                 }
                 @keyframes pulse {
                     0% { opacity: 1; }

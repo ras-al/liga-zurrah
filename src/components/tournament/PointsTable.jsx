@@ -66,14 +66,14 @@ export default function PointsTable({ filterGroup }) {
 
             if (match.scoreA > match.scoreB) {
                 tA.won++;
-                tA.pts += 2;
+                tA.pts += 3;
                 tB.lost++;
                 tA.form.push('W');
                 tB.form.push('L');
                 console.log(`Match ${match.id}: A wins. A pts: ${tA.pts}`);
             } else if (match.scoreB > match.scoreA) {
                 tB.won++;
-                tB.pts += 2;
+                tB.pts += 3;
                 tA.lost++;
                 tB.form.push('W');
                 tA.form.push('L');
@@ -116,36 +116,58 @@ export default function PointsTable({ filterGroup }) {
 
     return (
         <div className="points-table-container">
+            <style>{`
+                .points-table th, .points-table td {
+                    padding: 15px;
+                }
+                @media (max-width: 600px) {
+                    .points-table th, .points-table td {
+                        padding: 8px 4px !important;
+                        font-size: 0.8rem;
+                    }
+                    .team-name {
+                        font-size: 0.9rem !important;
+                    }
+                    .team-rank {
+                        width: 15px !important;
+                        font-size: 0.7rem !important;
+                    }
+                    .team-logo {
+                        width: 25px !important;
+                        height: 25px !important;
+                    }
+                }
+            `}</style>
             <table className="points-table" style={{ width: '100%', borderCollapse: 'collapse', color: 'white', fontSize: '0.9rem' }}>
                 <thead>
                     <tr style={{ borderBottom: '1px solid #333', color: '#888', fontSize: '0.8rem', textAlign: 'center' }}>
-                        <th style={{ padding: '15px', textAlign: 'left' }}>TEAM</th>
-                        <th style={{ padding: '15px' }} title="Played">P</th>
-                        <th style={{ padding: '15px' }} title="Won" className="desktop-only">W</th>
-                        <th style={{ padding: '15px' }} title="Drawn" className="desktop-only">D</th>
-                        <th style={{ padding: '15px' }} title="Lost" className="desktop-only">L</th>
-                        <th style={{ padding: '15px' }} title="Goal Difference">GD</th>
-                        <th style={{ padding: '15px', color: 'var(--neon-gold)' }} title="Points (Win=2)">PTS</th>
-                        <th style={{ padding: '15px' }} title="Form" className="desktop-only">FORM</th>
+                        <th style={{ textAlign: 'left' }}>TEAM</th>
+                        <th title="Played">P</th>
+                        <th title="Won">W</th>
+                        <th title="Drawn">D</th>
+                        <th title="Lost">L</th>
+                        <th title="Goal Difference">GD</th>
+                        <th style={{ color: 'var(--neon-gold)' }} title="Points">PTS</th>
+                        <th title="Form" className="desktop-only">FORM</th>
                     </tr>
                 </thead>
                 <tbody>
                     {table.map((team, index) => (
                         <tr key={team.id} style={{ borderBottom: '1px solid #222', background: index < 2 ? 'rgba(74, 222, 128, 0.05)' : 'transparent' }}>
-                            <td style={{ padding: '15px', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                <span style={{ color: '#666', fontSize: '0.8rem', width: '20px' }}>{index + 1}</span>
-                                <img src={team.logo} style={{ width: 30, height: 30, borderRadius: '50%' }} />
-                                <span style={{ fontWeight: 'bold', fontSize: '1rem' }}>{team.name}</span>
+                            <td style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span className="team-rank" style={{ color: '#666', fontSize: '0.8rem', width: '20px' }}>{index + 1}</span>
+                                <img className="team-logo" src={team.logo} style={{ width: 30, height: 30, borderRadius: '50%' }} />
+                                <span className="team-name" style={{ fontWeight: 'bold', fontSize: '1rem' }}>{team.name}</span>
                             </td>
-                            <td style={{ padding: '15px', textAlign: 'center' }}>{team.played}</td>
-                            <td style={{ padding: '15px', textAlign: 'center' }} className="desktop-only">{team.won}</td>
-                            <td style={{ padding: '15px', textAlign: 'center' }} className="desktop-only">{team.drawn}</td>
-                            <td style={{ padding: '15px', textAlign: 'center' }} className="desktop-only">{team.lost}</td>
-                            <td style={{ padding: '15px', textAlign: 'center', color: team.gd > 0 ? '#4ade80' : team.gd < 0 ? '#ef4444' : '#888', fontWeight: 'bold' }}>
+                            <td style={{ textAlign: 'center' }}>{team.played}</td>
+                            <td style={{ textAlign: 'center' }}>{team.won}</td>
+                            <td style={{ textAlign: 'center' }}>{team.drawn}</td>
+                            <td style={{ textAlign: 'center' }}>{team.lost}</td>
+                            <td style={{ textAlign: 'center', color: team.gd > 0 ? '#4ade80' : team.gd < 0 ? '#ef4444' : '#888', fontWeight: 'bold' }}>
                                 {team.gd > 0 ? '+' : ''}{team.gd}
                             </td>
-                            <td style={{ padding: '15px', textAlign: 'center', fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--neon-gold)' }}>{team.pts}</td>
-                            <td className="desktop-only" style={{ padding: '15px', textAlign: 'center' }}>
+                            <td style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--neon-gold)' }}>{team.pts}</td>
+                            <td className="desktop-only" style={{ textAlign: 'center' }}>
                                 <div style={{ display: 'flex', justifyContent: 'center', gap: '5px' }}>
                                     {team.form.map((res, i) => (
                                         <div key={i} style={{
