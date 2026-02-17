@@ -3,6 +3,7 @@ import { db } from '../../firebase';
 import { collection, doc, setDoc, onSnapshot, getDocs, where, query } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import confetti from 'canvas-confetti';
 
 export default function KnockoutBracket({ isAdmin }) {
     const [bracket, setBracket] = useState({});
@@ -13,6 +14,7 @@ export default function KnockoutBracket({ isAdmin }) {
     // Modal State
     const [selectedMatchId, setSelectedMatchId] = useState(null);
     const [newGoal, setNewGoal] = useState({ player: '', time: '', team: 'A' });
+    const [showCelebration, setShowCelebration] = useState(false);
 
     useEffect(() => {
         const initData = async () => {
@@ -114,6 +116,32 @@ export default function KnockoutBracket({ isAdmin }) {
         return teamId ? (players[teamId] || []) : [];
     };
 
+    const triggerConfetti = () => {
+        const duration = 3000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 2000 };
+
+        const random = (min, max) => Math.random() * (max - min) + min;
+
+        const interval = setInterval(function () {
+            const timeLeft = animationEnd - Date.now();
+
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
+            }
+
+            const particleCount = 50 * (timeLeft / duration);
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: random(0.1, 0.3), y: Math.random() - 0.2 } }));
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: random(0.7, 0.9), y: Math.random() - 0.2 } }));
+        }, 250);
+    };
+
+    useEffect(() => {
+        if (bracket['FINAL']?.status === 'finished') {
+            triggerConfetti();
+        }
+    }, [bracket['FINAL']?.status]);
+
     const renderMatch = (matchId, title) => {
         const match = bracket[matchId] || { scoreA: 0, scoreB: 0, status: 'scheduled', events: [] };
 
@@ -209,7 +237,7 @@ export default function KnockoutBracket({ isAdmin }) {
                             fontSize: '0.7rem', background: '#222', color: 'var(--neon-gold)',
                             border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', width: '100%'
                         }}>
-                            MANAGE MATCH ⚙️
+                            MANAGE MATCH
                         </button>
                     </div>
                 )}
@@ -219,7 +247,9 @@ export default function KnockoutBracket({ isAdmin }) {
 
     if (loading) return <div>Loading...</div>;
 
-    const currentMatch = bracket[selectedMatchId];
+    const currentMatch = bracket[selectedMatchId] || { scoreA: 0, scoreB: 0, status: 'scheduled', events: [] };
+    const finalMatch = bracket['FINAL'];
+    const winner = finalMatch?.status === 'finished' ? (finalMatch.scoreA > finalMatch.scoreB ? finalMatch.teamA : finalMatch.teamB) : null;
 
     return (
         <div style={{ overflowX: 'auto', paddingBottom: '20px' }}>
@@ -229,8 +259,37 @@ export default function KnockoutBracket({ isAdmin }) {
                     {renderMatch('SF2', 'SEMI FINAL 2')}
                 </div>
                 <div style={{ width: '40px', height: '2px', background: '#222' }}></div>
-                <div style={{ transform: 'scale(1.1)' }}>
-                    {renderMatch('FINAL', '🏆 GRAND FINAL 🏆')}
+                <div style={{ transform: 'scale(1.1)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+                    {renderMatch('FINAL', 'GRAND FINAL')}
+
+                    {/* Persistent Celebration Card */}
+                    <AnimatePresence>
+                        {winner && (
+                            <motion.div
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                                style={{
+                                    background: 'linear-gradient(135deg, #1a1a1a, #000)',
+                                    padding: '20px', borderRadius: '15px',
+                                    border: '2px solid var(--neon-gold)',
+                                    textAlign: 'center', width: '300px',
+                                    boxShadow: '0 0 30px rgba(255, 215, 0, 0.2)'
+                                }}
+                            >
+                                <h2 style={{ color: 'var(--neon-gold)', fontFamily: 'Anton', fontSize: '1.5rem', marginBottom: '10px', letterSpacing: '2px' }}>CHAMPIONS</h2>
+
+                                <motion.img
+                                    src={winner.logo}
+                                    animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+                                    transition={{ repeat: Infinity, duration: 3 }}
+                                    style={{ width: '80px', height: '80px', borderRadius: '50%', border: '2px solid var(--neon-gold)', marginBottom: '10px', boxShadow: '0 0 15px var(--neon-gold)' }}
+                                />
+
+                                <h3 style={{ color: 'white', fontSize: '1.2rem', marginBottom: '5px' }}>{winner.name}</h3>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
 
